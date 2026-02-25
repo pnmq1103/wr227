@@ -1,0 +1,129 @@
+\section{Experiments}
+
+\subsection{Datasets}
+This subsection should describe the datasets used in the experiments. In particular:
+\begin{itemize}
+  \item Dataset names and sources.
+  \item Key statistics: number of samples, number of classes, image resolution, and train--validation--test splits.
+  \item Any preprocessing or cleaning procedures.
+  \item A brief justification of why these datasets are appropriate for evaluating the proposed method.
+\end{itemize}
+
+Our experiments are conducted on the \textbf{Visual Genome (VG)} dataset \cite{krishna2017visual}, which is the primary benchmark for Scene Graph Generation. Originally released by Stanford University, the dataset was annotated by over 33,000 Amazon Mechanical Turk workers.
+
+\textbf{Preprocessing and Splits:} Due to the long-tail distribution and noisy annotations in the raw dataset, we utilize the widely adopted \textbf{VG-150 split} introduced by Xu et al. \cite{xu2017scene}. This preprocessing strategy filters the dataset to include only the most frequent 150 object categories and 50 relationship predicates.
+
+\textbf{Key Statistics:}
+\begin{itemize}
+  \item \textbf{Data Volume:} The dataset comprises of:
+        \begin{itemize}
+          \item 108,077 images where each image has an average of 35 Objects, 26 Attributes, 17 Question Answers pairs and 21 Pairwise Relationships between objects.
+          \item 5.4 Million Region Descriptions
+          \item 1.7 Million Visual Question Answers
+          \item 3.8 Million Object Instances
+          \item 2.8 Million Attributes
+          \item 2.3 Million Relationships
+        \end{itemize}
+  \item \textbf{Classes:} The vocabulary is restricted to 150 object classes and 50 relation classes.
+\end{itemize}
+
+\textbf{Justification:} Visual Genome is chosen because it provides dense, structured annotations that allow for granular evaluation of scene understanding. Unlike standard detection datasets, VG breaks images down into:
+\begin{itemize}
+  \item \textbf{Objects:} Localized bounding boxes for entities (e.g., \textit{man}, \textit{horse}).
+  \item \textbf{Attributes:} Descriptive properties of objects (e.g., \textit{red}, \textit{tall}).
+  \item \textbf{Relationships:} Directed edges describing interactions (e.g., \textit{riding}, \textit{on}).
+\end{itemize}
+
+
+
+
+
+\subsection{Evaluation Protocol}
+This subsection defines how model performance is assessed. It should include:
+\begin{itemize}
+  \item Evaluation metrics (e.g., accuracy, AUROC, F1-score, mAP).
+  \item Data splitting strategy and any cross-validation or repeated-trial setup.
+  \item Baselines used for comparison and criteria for fair evaluation.
+  \item Any task-specific rules or conventions followed during evaluation.
+\end{itemize}
+
+\subsection{Experimental Settings}
+This subsection outlines the full implementation and training configuration for reproducibility:
+\begin{itemize}
+  \item Model architecture settings and important hyperparameters
+        (e.g., learning rate, batch size, number of epochs).
+  \item Optimization algorithms and loss functions.
+  \item Hardware and software environment (e.g., GPU type, deep learning framework).
+  \item Data preprocessing and augmentation pipeline.
+\end{itemize}
+
+\subsection{Results and Discussion}
+This subsection presents and analyzes the experimental results:
+\begin{itemize}
+  \item Quantitative results summarized in tables and figures.
+  \item Qualitative results when appropriate.
+  \item Comparisons with state-of-the-art methods.
+  \item Insights on why the proposed method performs well and any limitations or failure cases.
+\end{itemize}
+
+\subsubsection{Comparison Experiments}
+This subsection reports direct comparisons with existing approaches:
+\begin{itemize}
+  \item Performance comparison with classical baselines and recent state-of-the-art methods.
+  \item Analysis of cases where the proposed method excels.
+  \item Discussion of scenarios where performance is comparable or lower.
+  \item Positioning of the proposed method within the broader research landscape.
+        There should be multiple tables \ref{tab1} and figures \ref{fig2} for demonstration and clarity.
+\end{itemize}
+
+\begin{table}[h]
+  \centering
+  \caption{Experimental results of predicate classification without Graph Constraint.}
+  \label{table:pred_cls_results}
+  \begin{tabular}{ |c|c c c| }
+    \hline
+    Category & R@20   & R@50   & R@100  \\
+    \hline
+    Spatial  & 0.4471 & 0.6356 & 0.7590 \\
+    % \hline
+    Action   & 0.2971 & 0.3835 & 0.4544 \\
+    % \hline
+    $mR@K$   & 0.0596 & 0.1027 & 0.1530 \\
+    % \hline
+    $R@K$    & 0.2991 & 0.4177 & 0.4987 \\
+    \hline
+  \end{tabular}
+\end{table}
+
+
+\begin{table}[t]
+  \centering
+  \caption{Table captions should be placed above the tables. Tables should be showned on top. Best values are bolded while second-best ones are underlined.}\label{tab1}
+  \begin{tabular}{|p{3cm}|c|c|}
+    \hline
+    Methods       & Metric 1          & Metric 2          \\
+    \hline
+    SOTA 1 [ref]  & 0.001             & 0.002             \\
+    SOTA 2 [ref]  & 0.003             & \underline{0.008} \\
+    SOTA 3 [ref]  & 0.005             & 0.006             \\
+    SOTA 4 [ref]  & \underline{0.007} & 0.004             \\
+    \hline
+    \textbf{Ours} & \textbf{0.009}    & \textbf{0.010}    \\
+    \hline
+  \end{tabular}
+\end{table}
+
+\begin{figure}[t]
+  \includegraphics[width=\textwidth]{figures/fig1.eps}
+  \caption{A figure caption is always placed below the illustration.
+    Please note that short captions are centered, while long ones are
+    justified by the macro package automatically.} \label{fig2}
+\end{figure}
+
+\subsubsection{Ablation Study}
+This subsection evaluates the contribution of each component of the proposed method:
+\begin{itemize}
+  \item Removal or modification of individual modules or strategies.
+  \item Measurement of performance change to quantify each component’s importance.
+  \item Justification of design decisions based on empirical evidence.
+\end{itemize}

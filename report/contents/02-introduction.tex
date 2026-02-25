@@ -1,0 +1,35 @@
+\section{Introduction}
+In computer vision, a scene graph is a graph-structured representation in which entities are modeled as nodes and their relations are as edges \cite{chang2021comprehensive,xu2020survey,li2024survey}. Scene Graph Generation (SGG) refers to the task of mapping images or videos into scene graphs as illustrated in Figure \ref{fig1}. This provides powerful visual understanding of a scene and enable object interactions reasoning, contextual relationships, and high-level semantics beyond individual object recognition.
+
+\subsection{Problem statement}
+\subsubsection{Definition.}
+The core problem of SGG is to efficiently parse the image by detecting visual relationships and output a scene graph that explicitly represents the semantic relationships between objects in the image  \cite{li2024survey}. Previous methods typically operate under a closed-set assumption for object and relation labels \cite{cong2023reltr,gao2018image,im2024egtr}.
+In contrast to the closed-set paradigm, \textbf{Open-Vocabulary Scene Graph Generation (Ov-SGG)} relaxes these constraints by requiring the model to generalize to novel objects and predicates that were not encountered during the supervised training phase.
+\begin{figure}[!htpb]
+  \includegraphics[width=\textwidth]{figures/input_output.png}
+  \caption{The input and output SGG\cite{li2024pixels}} \label{fig1}
+\end{figure}
+
+% \subsubsection{Challenges.}
+% \textit{First}, the combinatorial count of object pairs makes hollistic classification inefficient, necessitating effective interaction pruning.
+% \textit{Second}, long-tailed distributions cause models to be biased toward frequent, coarse predicates rather than precise but rarer ones.
+% \textit{Third}, high intra-class visual variance complicates feature extraction.
+% \textit{Fourth}, ambiguous and overlapping predicate definitions result in noisy datasets. \textit{Finally}, current metrics like $Recall@K$ only measure relative ranking, failing to assess the absolute quality or completeness of the scene graph \cite{li2024survey}.
+
+\subsubsection{Applications and Challenges.}
+SGG has a wide range of applications, namely, image captioning \cite{nguyen2021defense,gao2018image}, visual question answering \cite{johnson2017inferring} (VQA), image retrieval \cite{johnson2015image}, and image generation \cite{ashual2019specifying,johnson2018image}. However, real-world scenarios are diverse and contain unseen objects and relationships. Open-vocabulary Scene Graph Generation (Ov-SGG) addresses this challenge by leveraging large-scale models, e.g., Multimodal Large Language Models (MLLMs) and Vision-Language Models (VLMs). Despite these advances, object identification in open-vocabulary settings remains incomplete.
+
+\subsubsection{Research Scope.} In this study, we address the problem of SGG strictly within the domain of static 2D images, excluding video or 3D point cloud data.
+
+\subsection{Literature review}
+% A structured summary of the major research directions, methods, models, and frameworks previously used to address the problem should be provided. The literature may be grouped into meaningful categories (e.g., traditional vs. modern approaches, supervised vs. unsupervised methods, single-modal vs. multi-modal systems) to help readers understand the broader landscape and how different approaches relate to one another. If a category is sufficiently substantial, it should be presented in a separate paragraph.
+
+% For each category, include at least two representative methods and provide a critical discussion of what existing approaches can and cannot achieve. This discussion should highlight their advantages or innovations, their weaknesses or unresolved challenges, and any assumptions or constraints they rely on. Such analysis establishes the necessity for further research.
+
+\subsection{Contributions}
+% A short explanation of how your method differs from, improves upon, or complements prior work. Begin with one or two sentences that articulate the motivations for the proposed methods. Then provide a concise description of the method’s design. Conclude with a summary of the major contributions (e.g., “Our contributions lies in three folds:” ).
+% \begin{itemize}
+%   \item First contribution.
+%   \item Second contribution.
+%   \item Third contribution.
+% \end{itemize}
