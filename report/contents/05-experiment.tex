@@ -1,42 +1,6 @@
 \section{Experiments}
 
 \subsection{Datasets}
-This subsection should describe the datasets used in the experiments. In particular:
-\begin{itemize}
-  \item Dataset names and sources.
-  \item Key statistics: number of samples, number of classes, image resolution, and train--validation--test splits.
-  \item Any preprocessing or cleaning procedures.
-  \item A brief justification of why these datasets are appropriate for evaluating the proposed method.
-\end{itemize}
-
-Our experiments are conducted on the \textbf{Visual Genome (VG)} dataset \cite{krishna2017visual}, which is the primary benchmark for Scene Graph Generation. Originally released by Stanford University, the dataset was annotated by over 33,000 Amazon Mechanical Turk workers.
-
-\textbf{Preprocessing and Splits:} Due to the long-tail distribution and noisy annotations in the raw dataset, we utilize the widely adopted \textbf{VG-150 split} introduced by Xu et al. \cite{xu2017scene}. This preprocessing strategy filters the dataset to include only the most frequent 150 object categories and 50 relationship predicates.
-
-\textbf{Key Statistics:}
-\begin{itemize}
-  \item \textbf{Data Volume:} The dataset comprises of:
-        \begin{itemize}
-          \item 108,077 images where each image has an average of 35 Objects, 26 Attributes, 17 Question Answers pairs and 21 Pairwise Relationships between objects.
-          \item 5.4 Million Region Descriptions
-          \item 1.7 Million Visual Question Answers
-          \item 3.8 Million Object Instances
-          \item 2.8 Million Attributes
-          \item 2.3 Million Relationships
-        \end{itemize}
-  \item \textbf{Classes:} The vocabulary is restricted to 150 object classes and 50 relation classes.
-\end{itemize}
-
-\textbf{Justification:} Visual Genome is chosen because it provides dense, structured annotations that allow for granular evaluation of scene understanding. Unlike standard detection datasets, VG breaks images down into:
-\begin{itemize}
-  \item \textbf{Objects:} Localized bounding boxes for entities (e.g., \textit{man}, \textit{horse}).
-  \item \textbf{Attributes:} Descriptive properties of objects (e.g., \textit{red}, \textit{tall}).
-  \item \textbf{Relationships:} Directed edges describing interactions (e.g., \textit{riding}, \textit{on}).
-\end{itemize}
-
-
-
-
 
 \subsection{Evaluation Protocol}
 This subsection defines how model performance is assessed. It should include:

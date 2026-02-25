@@ -9,4 +9,4 @@
 *.nav
 *.snm
 *.pdf
-build\
+build/
