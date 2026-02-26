@@ -12,7 +12,7 @@
 - [ ] PA3
 
 ## TODO LIST: 
-- [] Implement Transformer architecture
-- [] Design a general attention model 
-- [] Implement ViT with different kind of attention mechanisms
-- [] Searching for a bench mark and performing analysis with the result of implemented ViT models.
+- [ ] Implement Transformer architecture
+- [ ] Design a general attention model 
+- [ ] Implement ViT with different kind of attention mechanisms
+- [ ] Searching for a bench mark and performing analysis with the result of implemented ViT models. 
