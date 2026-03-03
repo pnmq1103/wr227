@@ -1,11 +1,12 @@
 \section{Related Work}
 \subsection{Vision Transformer}
+Transformer[cite] model is initially created for NLP tasks and achieved remarkable success. However, they did not have much impact on computer vision until Alexey Dosovitskiy et al. [cite ViT] introduced the Vision Transformer (ViT), which splits the image into many small patches as tokens feed to the model. Although this approach demonstrated strong performance on many Computer Vision tasks, its quadratic complexity due to self-attention making it computationally expensive to process high resolution images. To address this, Microsoft Research proposed Swin Transformer [cite], which restricts attention to local windows, inspiring subsequent window-based variants. Other methods reduce attention cost by compressing keys or values using linear projections, strided convolutions, pooling, or patch clustering. Additionally, some variants explore alternative designs such as channel attention and softmax-free attention mechanisms.
 \subsection{Linear Attention} 
 %Breaking the Low-Rank Dilemma of Linear Attention  
 Linear Attention[cite original linear attention] fixes the quadratic complexity of Softmax attention by using kernel functions to approximate the \(Sim()\) operator, reducing the complexity to linear. However, its performance is still largely behind Softmax. Many recent works try to tackle this issue[cite all linear attention].
 FLattenTransformer [23] introduces a focused function to enhance the ability of linear attention to concentrate on relevant information, while MLLA [24] establishes a link between linear attention and the Mamba model [19]. 
  More recently, Qihang Fan et al.[break low rank dilemma] addresses a fundamental limitation of linear attention by identifying the low-rank nature of its feature representations as a major cause of performance degradation. To overcome this, the paper proposes Rank-Augmented Linear Attention, which enriches both the key–value buffer and output features to raise their effective rank. Many other approaches either rely on kernel-based approximations of the Softmax function or integrate depthwise convolution to improve feature diversity. 
-\subsection{Reinforcement Learning}
+\subsection{Token Pruning}
 % Related techniques relevant to the chosen approach should be described in this section.
 % Each technique should be presented in a separate paragraph, summarizing its role in the overall problem and acknowledging the common methods associated with it.
 % For example, if your method incorporates data augmentation, you should briefly explain the purpose of augmentation and mention typical techniques such as CutMix or MixUp.
