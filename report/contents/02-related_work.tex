@@ -1,4 +1,8 @@
 \section{Related Work}
+% Related techniques relevant to the chosen approach should be described in this section.
+% Each technique should be presented in a separate paragraph, summarizing its role in the overall problem and acknowledging the common methods associated with it.
+% For example, if your method incorporates data augmentation, you should briefly explain the purpose of augmentation and mention typical techniques such as CutMix or MixUp.
+
 \subsection{Vision Transformer}
 Transformer \cite{vaswani2017attention} model is initially created for NLP tasks and achieved remarkable success. However, they did not have much impact on computer vision until Alexey Dosovitskiy et al. \cite{rao2021dynamicvit} introduced the Vision Transformer (ViT), which splits the image into many small patches as tokens feed to the model. Although this approach demonstrated strong performance on many Computer Vision tasks, its quadratic complexity due to self-attention making it computationally expensive to process high resolution images. To address this, Microsoft Research proposed Swin Transformer \cite{liu2021swin}, which restricts attention to local windows, inspiring subsequent window-based variants. Other methods reduce attention cost by compressing keys or values using linear projections, strided convolutions, pooling, or patch clustering. Additionally, some variants explore alternative designs such as channel attention and softmax-free attention mechanisms.
 
@@ -8,7 +12,5 @@ FLattenTransformer \cite{han2023flatten} introduces a focused function to enhanc
 More recently, Qihang Fan et al. \cite{fan2025breaking} addresses a fundamental limitation of linear attention by identifying the low-rank nature of its feature representations as a major cause of performance degradation. To overcome this, the paper proposes Rank-Augmented Linear Attention, which enriches both the key-value buffer and output features to raise their effective rank. Many other approaches either rely on kernel-based approximations of the Softmax function or integrate depthwise convolution to improve feature diversity. Our work adopts the method from Qihang Fan et al. \cite{fan2025breaking}.
 
 \subsection{Token Pruning}
+
 ViT suffers from high computational cost propotional to the number of input tokens, hence many attempts have been made to reduce the redundant tokens while still keeping high performance. Traditional dynamic methods like DynamicViT \cite{rao2021dynamicvit} and TokenLearner \cite{ryoo2021tokenlearner} adaptively drop or condense tokens. Adaptive pruning technique such as AdaViT \cite{meng2022adavit} use attention metrics or learned masks to select important tokens. Recent methods introduce the use of reinforcement learning to learn the pruning policies. Specifically, Chenglong Lu et al. \cite{lu2025reinforcement} formulates token pruning as a sequential decision making problem with multi-agent RL, where each of the visual token is consider an agent. Our study adopt this framework for token pruning.
-% Related techniques relevant to the chosen approach should be described in this section.
-% Each technique should be presented in a separate paragraph, summarizing its role in the overall problem and acknowledging the common methods associated with it.
-% For example, if your method incorporates data augmentation, you should briefly explain the purpose of augmentation and mention typical techniques such as CutMix or MixUp.

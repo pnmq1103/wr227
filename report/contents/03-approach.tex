@@ -1,0 +1,25 @@
+\section{Approach}
+\subsection{Proposed Method}
+Standard ViTs rely on softmax attention which causes quadratic complexity.  To tackle this,
+we adopt linear attention as a replacement to reduce to linear complexity. Specifically, we adopt
+the RALA architecture from Qihan Fan \cite{fan2025breaking}. We extend the method by combining a token
+pruning mechanism, which aim to refine the input for linear attention, improving its performance.
+In detail, at intermediate layer depth in the ViT, we use a Multi-Agent Proximal Policy Optimization, as proposed
+in \cite{lu2025reinforcement} where each visual token is considered a specific agent, to drop low value token. The surviving token is then
+fed into the linear attention layer.
+
+\subsubsection*{Softmax Attention}
+
+\subsubsection*{Rank-Augmented Linear Attention}
+
+\subsubsection*{Multi-Agent Proximal Policy Optimization (MAPPO)}
+
+\subsection{Experimental Design}
+
+\begin{itemize}
+  \item We conduct experients on multiple vision task, namely, object detection and image classification.
+  \item We evaluate model's training and inference efficiency to understand the trade-off.
+  \item We conduct ablation studies to validate the importance of each component.
+\end{itemize}
+
+% This section presents the proposed method (or the method under consideration), and it should be substantially longer than the Introduction and Related Works sections. The architectural details must be described carefully and systematically. An illustrative figure is required, typically the key figure of the paper, clearly conveying the overall idea and showing all important components of the method.
