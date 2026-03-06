@@ -6,8 +6,8 @@ channels:
   - defaults
 dependencies:
   - python=3.10
-  - pytorch
-  - pytorch-cuda=12.1
+  - pytorch::pytorch
+  - pytorch::pytorch-cuda=12.1
   - tensorboard
   - tqdm
   - pip

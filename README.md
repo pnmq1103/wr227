@@ -19,8 +19,9 @@
 
 ## To-do List
 
-- [ ] More literature survey
-- [ ] Implement Transformer architecture
+- [x] More literature survey
+- [x] Implement Transformer architecture
+- [x] Vision Transformer
 - [ ] Benchmark and analyze performance of the models
 
 - [Literature Review](https://docs.google.com/spreadsheets/d/13qwilvCUy6kqlFihILLLDaHHqWTQjU1UKLHDgjB9DzE/)
