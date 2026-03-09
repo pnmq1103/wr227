@@ -16,7 +16,7 @@ However, softmax attention, the core mechanism of Transformer, has a high comput
 To address the issue, many works attempted to group vision tokens. Although this method reduces the complexity,
 Transformer loses its ability to perceive information globally.
 Other works replace softmax attention with \textbf{linear attention} which help reduce the quadratic complexity.
-However, linear attention inability to model complex information yields unsatisfactory results.
+However, linear attention inability to model complex information yields unsatisfactory results, due to its low-rank nature and magnitude negligence.
 % transition
 Many works have attempted to improve linear attention by tackling its low-rank nature \cite{fan2025breaking}.
 Linear attention replaces softmax with kernal feature maps which causes the loss of sharpness.
