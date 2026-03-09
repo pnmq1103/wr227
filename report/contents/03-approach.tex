@@ -5,7 +5,7 @@ We propose a reinforcement-learning (RL) based token routing framework with a sh
 \subsection{Overall Architecture}
 
 Our study augments a standard ViT with a reinforcement-learning based token routing module and linear attention mechanism. Given an input image, the ViT patch embedding first converts the image into a sequence of $N$ patch tokens.
-Instead of processing all tokens through every transformer layer, we introduce a policy network $\pi_\theta$ that dynamically routes tokens at selected stage transitions. The policy assigns each token an action, that is: "keep", "remove", "store", or "retrieve", allowing the model to filter redundant tokens and preserve informative ones.
+Instead of processing all tokens through every transformer layer, we introduce a lightweight policy network $\pi_\theta$ that dynamically routes tokens at selected stage transitions. The policy assigns each token an action, that is: \textit{keep}, \textit{remove}, \textit{store}, or \textit{retrieve}, allowing the model to filter redundant tokens and preserve informative ones.
 Tokens assigned the \textit{keep} or \textit{retrieve} actions are packed into a shortened sequence of length $N_{\text{active}}$ and passed to the subsequent linear attention blocks. The attention output is computed as
 
 \[
@@ -131,7 +131,7 @@ We aim to make $N_{\text{active}} \ll N$, the effective computational cost is re
 {Active Tokens\\$N_{\text{active}} \ll N$};
 
 \draw[->] (keep) -- (active);
-\draw[->] (retrieve) |- (active);
+\draw[->] (retrieve) -- (active);
 
 %------------------------------------------------
 % Linear Attention
@@ -176,7 +176,7 @@ at (actions.north west)
 \end{figure}
 \subsection{RL-Based Token Routing}
 
-To address the representational limitation of linear attention, we introduce a
+To tackle the limitations of linear attention, we introduce a lightweight
 RL policy network that dynamically routes tokens
 during inference. Given a token representation $x_i \in \mathbb{R}^d$, the policy network
 $\pi_\theta$ computes an action distribution
