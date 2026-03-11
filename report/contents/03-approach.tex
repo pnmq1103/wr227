@@ -9,170 +9,170 @@ Instead of processing all tokens through every transformer layer, we introduce a
 Tokens assigned the \textit{keep} or \textit{retrieve} actions are packed into a shortened sequence of length $N_{\text{active}}$ and passed to the subsequent linear attention blocks. The attention output is computed as
 
 \[
-O = \phi(Q_{\text{active}})\big(\phi(K_{\text{active}})^T V_{\text{active}}\big).
+  O = \phi(Q_{\text{active}})\big(\phi(K_{\text{active}})^T V_{\text{active}}\big).
 \]
 
 We aim to make $N_{\text{active}} \ll N$, the effective computational cost is reduced while maintaining the model's ability to focus on important tokens. Meanwhile, contextual information from discarded or stored tokens can be preserved through the shared memory mechanism, allowing global context to bypass the linear attention bottleneck.
 \begin{figure}[H]
-\resizebox{\linewidth}{!}{%
-\centering
-\begin{tikzpicture}[
-    font=\sffamily\small,
-    >={Stealth[scale=1.1]},
-    node distance=1.6cm and 1.4cm,
-    block/.style={
-        draw,
-        rounded corners,
-        fill=blue!6,
-        minimum width=2.8cm,
-        minimum height=0.9cm,
-        align=center
-    },
-    policy/.style={
-        draw,
-        rounded corners,
-        fill=red!8,
-        minimum width=3.2cm,
-        minimum height=1cm,
-        align=center,
-        font=\bfseries
-    },
-    action/.style={
-        draw,
-        rounded corners,
-        fill=gray!10,
-        minimum width=1.8cm,
-        minimum height=0.7cm,
-        align=center
-    },
-    memory/.style={
-        draw,
-        cylinder,
-        shape border rotate=90,
-        aspect=0.25,
-        fill=green!8,
-        minimum height=1.4cm,
-        minimum width=2.4cm,
-        align=center
-    },
-    attention/.style={
-        draw,
-        rounded corners,
-        fill=orange!12,
-        minimum width=4.2cm,
-        minimum height=1.2cm,
-        align=center,
-        font=\bfseries
-    }
-]
+  \resizebox{\linewidth}{!}{%
+    \centering
+    \begin{tikzpicture}[
+      font=\sffamily\small,
+      >={Stealth[scale=1.1]},
+      node distance=1.6cm and 1.4cm,
+      block/.style={
+          draw,
+          rounded corners,
+          fill=blue!6,
+          minimum width=2.8cm,
+          minimum height=0.9cm,
+          align=center
+        },
+      policy/.style={
+          draw,
+          rounded corners,
+          fill=red!8,
+          minimum width=3.2cm,
+          minimum height=1cm,
+          align=center,
+          font=\bfseries
+        },
+      action/.style={
+          draw,
+          rounded corners,
+          fill=gray!10,
+          minimum width=1.8cm,
+          minimum height=0.7cm,
+          align=center
+        },
+      memory/.style={
+          draw,
+          cylinder,
+          shape border rotate=90,
+          aspect=0.25,
+          fill=green!8,
+          minimum height=1.4cm,
+          minimum width=2.4cm,
+          align=center
+        },
+      attention/.style={
+          draw,
+          rounded corners,
+          fill=orange!12,
+          minimum width=4.2cm,
+          minimum height=1.2cm,
+          align=center,
+          font=\bfseries
+        }
+      ]
 
-%------------------------------------------------
-% Input pipeline
-%------------------------------------------------
+      %------------------------------------------------
+      % Input pipeline
+      %------------------------------------------------
 
-\node[block] (image) {Input Image};
+      \node[block] (image) {Input Image};
 
-\node[block, right=of image] (patch)
-{Patch Embedding};
+      \node[block, right=of image] (patch)
+      {Patch Embedding};
 
-\node[block, right=of patch] (tokens)
-{Token Sequence\\$X \in \mathbb{R}^{N\times d}$};
+      \node[block, right=of patch] (tokens)
+      {Token Sequence\\$X \in \mathbb{R}^{N\times d}$};
 
-%------------------------------------------------
-% Policy network
-%------------------------------------------------
+      %------------------------------------------------
+      % Policy network
+      %------------------------------------------------
 
-\node[policy, below=1.8cm of tokens] (policy)
-{Routing Policy $\pi_\theta$};
+      \node[policy, below=1.8cm of tokens] (policy)
+      {Routing Policy $\pi_\theta$};
 
-\draw[->] (tokens) -- (policy);
+      \draw[->] (tokens) -- (policy);
 
-%------------------------------------------------
-% Actions
-%------------------------------------------------
+      %------------------------------------------------
+      % Actions
+      %------------------------------------------------
 
-\node[action, below left=of policy] (remove)
-{Remove};
+      \node[action, below left=of policy] (remove)
+      {Remove};
 
-\node[action, below=of policy] (store)
-{Store};
+      \node[action, below=of policy] (store)
+      {Store};
 
-\node[action, below right=of policy] (keep)
-{Keep};
+      \node[action, below right=of policy] (keep)
+      {Keep};
 
-\node[action, right=of keep] (retrieve)
-{Retrieve};
+      \node[action, right=of keep] (retrieve)
+      {Retrieve};
 
-\draw[->] (policy) -- (remove);
-\draw[->] (policy) -- (store);
-\draw[->] (policy) -- (keep);
-\draw[->] (policy) -- (retrieve);
+      \draw[->] (policy) -- (remove);
+      \draw[->] (policy) -- (store);
+      \draw[->] (policy) -- (keep);
+      \draw[->] (policy) -- (retrieve);
 
-%------------------------------------------------
-% Memory
-%------------------------------------------------
+      %------------------------------------------------
+      % Memory
+      %------------------------------------------------
 
-\node[memory, below=1.4cm of store] (memory)
-{Shared Memory\\Bank $B$};
+      \node[memory, below=1.4cm of store] (memory)
+      {Shared Memory\\Bank $B$};
 
-\draw[->] (store) -- node[right,font=\scriptsize]{} (memory);
+      \draw[->] (store) -- node[right,font=\scriptsize]{} (memory);
 
-\draw[->, dashed, thick, green!50!black]
-(memory) -| node[pos=0.25, above,font=\scriptsize]
-{context retrieval}
-(retrieve);
+      \draw[->, dashed, thick, green!50!black]
+      (memory) -| node[pos=0.25, above,font=\scriptsize]
+        {context retrieval}
+      (retrieve);
 
-%------------------------------------------------
-% Active tokens
-%------------------------------------------------
+      %------------------------------------------------
+      % Active tokens
+      %------------------------------------------------
 
-\node[block, below=2.2cm of keep]
-(active)
-{Active Tokens\\$N_{\text{active}} \ll N$};
+      \node[block, below=2.2cm of keep]
+      (active)
+      {Active Tokens\\$N_{\text{active}} \ll N$};
 
-\draw[->] (keep) -- (active);
-\draw[->] (retrieve) |- (active);
+      \draw[->] (keep) -- (active);
+      \draw[->] (retrieve) |- (active);
 
-%------------------------------------------------
-% Linear Attention
-%------------------------------------------------
+      %------------------------------------------------
+      % Linear Attention
+      %------------------------------------------------
 
-\node[attention, below=of active] (attn)
-{Linear Attention\\
-$O=\phi(Q_a)(\phi(K_a)^T V_a)$};
+      \node[attention, below=of active] (attn)
+      {Linear Attention\\
+        $O=\phi(Q_a)(\phi(K_a)^T V_a)$};
 
-\draw[->] (active) -- (attn);
+      \draw[->] (active) -- (attn);
 
-%------------------------------------------------
-% Input arrows
-%------------------------------------------------
+      %------------------------------------------------
+      % Input arrows
+      %------------------------------------------------
 
-\draw[->] (image) -- (patch);
-\draw[->] (patch) -- (tokens);
+      \draw[->] (image) -- (patch);
+      \draw[->] (patch) -- (tokens);
 
-%------------------------------------------------
-% Action space box
-%------------------------------------------------
+      %------------------------------------------------
+      % Action space box
+      %------------------------------------------------
 
-\begin{scope}[on background layer]
+      \begin{scope}[on background layer]
 
-\node[
-draw,
-dashed,
-rounded corners,
-fill=gray!3,
-fit=(remove)(store)(keep)(retrieve),
-inner sep=8pt
-] (actions) {};
+        \node[
+          draw,
+          dashed,
+          rounded corners,
+          fill=gray!3,
+          fit=(remove)(store)(keep)(retrieve),
+          inner sep=8pt
+        ] (actions) {};
 
-\node[above right,font=\bfseries\scriptsize,color=gray!70]
-at (actions.north west)
-{Action Space $\mathcal{A}$};
+        \node[above right,font=\bfseries\scriptsize,color=gray!70]
+        at (actions.north west)
+        {Action Space $\mathcal{A}$};
 
-\end{scope}
-\end{tikzpicture}
-}
-\caption{Overall Method}
+      \end{scope}
+    \end{tikzpicture}
+  }
+  \caption{Overall Method}
 \end{figure}
 \subsection{RL-Based Token Routing}
 
@@ -182,24 +182,24 @@ during inference. Given a token representation $x_i \in \mathbb{R}^d$, the polic
 $\pi_\theta$ computes an action distribution
 
 \[
-\pi_\theta(a_i \mid x_i) = \text{Softmax}(W_2 \sigma(W_1 x_i)),
+  \pi_\theta(a_i \mid x_i) = \text{Softmax}(W_2 \sigma(W_1 x_i)),
 \]
 where $W_1$ and $W_2$ are learnable parameters and $\sigma(\cdot)$ denotes a
 nonlinear activation function. The policy selects an action
 
 \[
-a_i \in \{\text{keep}, \text{remove}, \text{store}, \text{retrieve}\}.
+  a_i \in \{\text{keep}, \text{remove}, \text{store}, \text{retrieve}\}.
 \]
 
 Each action modifies the token flow as follows:
 
 \begin{itemize}
-\item \textbf{Keep}: the token remains in the active sequence and participates
-in linear attention.
-\item \textbf{Remove}: the token is discarded to reduce sequence length.
-\item \textbf{Store}: the token is compressed into a shared memory bank.
-\item \textbf{Retrieve}: the token receives contextual information from the
-memory bank.
+  \item \textbf{Keep}: the token remains in the active sequence and participates
+        in linear attention.
+  \item \textbf{Remove}: the token is discarded to reduce sequence length.
+  \item \textbf{Store}: the token is compressed into a shared memory bank.
+  \item \textbf{Retrieve}: the token receives contextual information from the
+        memory bank.
 \end{itemize}
 
 Let $\mathcal{A}$ denote the set of tokens selected by the policy to remain
@@ -212,14 +212,14 @@ balances model performance and computational efficiency.
 Tokens assigned to the \textit{store} action are aggregated into a shared memory representation:
 
 \[
-B = \frac{1}{|\mathcal{S}|} \sum_{j \in \mathcal{S}} x_j,
+  B = \frac{1}{|\mathcal{S}|} \sum_{j \in \mathcal{S}} x_j,
 \]
 where $\mathcal{S}$ denotes the set of stored tokens.
 
 Tokens requesting contextual information retrieve it through a residual update
 
 \[
-\hat{x}_i = x_i + W_r B,
+  \hat{x}_i = x_i + W_r B,
 \]
 where $W_r$ is a learnable projection matrix.
 
@@ -229,7 +229,6 @@ This memory pathway allows global contextual information to bypass the linear at
 
 The routing policy is trained using reinforcement learning. The reward function balances two objectives: preserving downstream task performance, minimizing the number of active tokens. The reward is defined as
 \[
-R = \alpha \, \text{Acc} - \beta \frac{N_{\text{active}}}{N},
+  R = \alpha \, \text{Acc} - \beta \frac{N_{\text{active}}}{N},
 \]
 where $\text{Acc}$ represents task performance, and $\alpha,\beta$ control the trade-off between accuracy and efficiency.
-
