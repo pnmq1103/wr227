@@ -12,7 +12,7 @@
 
 - [x] [PA1](https://docs.google.com/document/d/1EMJ5UtmZ4s529wdfB6jzrk_XtRUov0Cv9JmKBHgcT_I/): Topic Proposal
 - [x] PA2: Introduction, Related Work
-- [ ] PA3: Method
+- [x] PA3: Method
 - [ ] PA4: Experiment and Results
 - [ ] PA5: Conclusion and Abstract
 - [ ] In-class Presentation
