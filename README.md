@@ -22,6 +22,7 @@
 - [x] More literature survey
 - [x] Implement Transformer architecture
 - [x] Vision Transformer
+- [ ] Format: 2 columns
 - [ ] Benchmark and analyze performance of the models
 
 - [Literature Review](https://docs.google.com/spreadsheets/d/13qwilvCUy6kqlFihILLLDaHHqWTQjU1UKLHDgjB9DzE/)
