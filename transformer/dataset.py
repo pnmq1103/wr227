@@ -1,18 +1,18 @@
 import torch
 import torch.nn as nn
-from torch.utils.data import DataLoader, Dataset
+from torch.utils.data import Dataset
 
 
 class BilingualDataset(Dataset):
     def __init__(
-        self, ds, tokenizer_src, tokenizer_tar, src_lang, tar_lang, seq_len
+        self, ds, tokenizer_src, tokenizer_tgt, src_lang, tgt_lang, seq_len
     ) -> None:
         super().__init__()
         self.ds = ds
         self.tokenizer_src = tokenizer_src
-        self.tokenizer_tar = tokenizer_tar
+        self.tokenizer_tgt = tokenizer_tgt
         self.src_lang = src_lang
-        self.tar_lang = tar_lang
+        self.tgt_lang = tgt_lang
         self.seq_len = seq_len
         self.sos_token = torch.tensor(
             [tokenizer_src.token_to_id("[SOS]")], dtype=torch.int64
@@ -28,12 +28,12 @@ class BilingualDataset(Dataset):
         return len(self.ds)
 
     def __getitem__(self, index):
-        src_target_pair = self.ds[index]
-        src_text = src_target_pair["translation"][self.src_lang]
-        tar_text = src_target_pair["translation"][self.tar_lang]
+        src_tgtget_pair = self.ds[index]
+        src_text = src_tgtget_pair["translation"][self.src_lang]
+        tgt_text = src_tgtget_pair["translation"][self.tgt_lang]
 
         enc_input_tokens = self.tokenizer_src.encode(src_text).ids
-        dec_input_tokens = self.tokenizer_tar.encode(tar_text).ids
+        dec_input_tokens = self.tokenizer_tgt.encode(tgt_text).ids
 
         enc_num_padding_tokens = self.seq_len - len(enc_input_tokens) - 2
         dec_num_padding_tokens = self.seq_len - len(dec_input_tokens) - 1
@@ -88,7 +88,7 @@ class BilingualDataset(Dataset):
             & causal_mask(decoder_input.size(0)),
             "label": label,
             "src_text": src_text,
-            "tar_text": tar_text,
+            "tgt_text": tgt_text,
         }
 
 

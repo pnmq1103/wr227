@@ -11,7 +11,7 @@ Linear Attention \cite{shen2021efficient} fixes the quadratic complexity of Soft
 Given an input sequence of $N$ tokens, standard self-attention computes
 
 \[
-A = \text{Softmax}(QK^T)
+  A = \text{Softmax}(QK^T)
 \]
 
 where $Q,K,V \in \mathbb{R}^{N \times d}$ are the query, key, and value matrices and $d$ is the feature dimension.
@@ -19,14 +19,14 @@ where $Q,K,V \in \mathbb{R}^{N \times d}$ are the query, key, and value matrices
 To reduce the quadratic complexity of softmax attention, linear attention replaces the softmax operation with a feature map $\phi(\cdot)$:
 
 \[
-A = \phi(Q)\phi(K)^T
+  A = \phi(Q)\phi(K)^T
 \]
 
-where $\phi(\cdot)$ is a kernel feature mapping applied element-wise.  
+where $\phi(\cdot)$ is a kernel feature mapping applied element-wise.
 Due to matrix rank constraints,
 
 \[
-\text{rank}(A) \le d.
+  \text{rank}(A) \le d.
 \]
 
 When the number of tokens $N$ is significantly larger than $d$, the attention mechanism must compress the interactions among many tokens into a limited representation. This compression can reduce the model's ability to capture fine-grained relationships among tokens, especially in high-resolution vision tasks. Thus its performance is still largely behind Softmax. Many recent works try to tackle this issue \cite{cai2023efficientvit,han2023flatten,han2024demystify,katharopoulos2020transformers,lu2024softmax,shen2021efficient}.
@@ -34,4 +34,4 @@ FLattenTransformer \cite{han2023flatten} introduces a focused function to enhanc
 More recently, Qihang Fan et al. \cite{fan2025breaking} addresses a fundamental limitation of linear attention by identifying the low-rank nature of its feature representations as a major cause of performance degradation. To overcome this, the paper proposes Rank-Augmented Linear Attention, which enriches both the key-value buffer and output features to raise their effective rank. Many other approaches either rely on kernel-based approximations of the Softmax function or integrate depthwise convolution to improve feature diversity.
 \subsection{Token Pruning}
 
-ViT suffers from high computational cost propotional to the number of input tokens, hence many attempts have been made to reduce the redundant tokens while still keeping high performance. Traditional dynamic methods like DynamicViT \cite{rao2021dynamicvit} and TokenLearner \cite{ryoo2021tokenlearner} adaptively drop or condense tokens. Adaptive pruning technique such as AdaViT \cite{meng2022adavit} use attention metrics or learned masks to select important tokens. Recent methods introduce the use of reinforcement learning to learn the pruning policies. Specifically, Chenglong Lu et al. \cite{lu2025reinforcement} formulates token pruning as a sequential decision making problem with multi-agent RL, where each of the visual token is consider an agent. 
+ViT suffers from high computational cost propotional to the number of input tokens, hence many attempts have been made to reduce the redundant tokens while still keeping high performance. Traditional dynamic methods like DynamicViT \cite{rao2021dynamicvit} and TokenLearner \cite{ryoo2021tokenlearner} adaptively drop or condense tokens. Adaptive pruning technique such as AdaViT \cite{meng2022adavit} use attention metrics or learned masks to select important tokens. Recent methods introduce the use of reinforcement learning to learn the pruning policies. Specifically, Chenglong Lu et al. \cite{lu2025reinforcement} formulates token pruning as a sequential decision making problem with multi-agent RL, where each of the visual token is consider an agent.

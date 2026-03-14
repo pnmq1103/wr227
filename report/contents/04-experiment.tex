@@ -2,21 +2,21 @@
 
 %baseline : key baseline without modifficaiton
 %add dataset + describe
-\begin{itemize}
-  \item We conduct experients on multiple vision task, namely, object detection and image classification.
-  \item We evaluate model's training and inference efficiency to understand the trade-off.
-  \item We conduct ablation studies to validate the importance of each component.
-\end{itemize}
-%add metrics.
-%explain why using the baselines (is it SOTA?).
 
-\subsection{Image Classification}
+\subsection{Experimental Design}
 
-\textbf{Settings}
+Our evaluation spans two primary computer vision tasks: \textbf{image classification} and \textbf{object detection}. We focus on measuring the trade-off between model accuracy and computational efficiency (both training and inference) while conducting ablation studies to isolate the impact of each architectural component.
 
-\subsection{Object Detection}
+\subsubsection{Task Specifications}
 
-\subsection{Training and Inference Speed}
+\paragraph{Image Classification}
+We use the \textbf{ImageNet-1K} dataset, a standard benchmark containing over 1.2 million images across 1,000 categories. Performance is measured using \textbf{Top-1 Accuracy}, which denotes the percentage of instances where the model's highest-probability prediction matches the ground-truth label.
+
+\paragraph{Object Detection}
+For localization tasks, we use the \textbf{COCO} 2017 dataset, which is widely recognized for its complexity and variety of object scales. We report the \textbf{Average Precision (AP)}, a metric that accounts for both the precision and recall of the predicted bounding boxes at various Intersection over Union (IoU) thresholds.
+  
+\subsection{Implementation Environment}
+The framework is implemented in \textbf{Python} using the \textbf{PyTorch} deep learning library. All experiments, including training and inference profiling, are conducted on a local computer with a single NVIDIA RTX 5060 Ti GPU.
 
 % \subsection{Datasets}
 
