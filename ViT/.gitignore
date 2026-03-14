@@ -1,1 +1,3 @@
-/oxford-iiit-pet/
+/oxford-iiit-pet/   
+/cifar-100-python/
+*.pth
