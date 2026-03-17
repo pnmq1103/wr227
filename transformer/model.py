@@ -6,31 +6,31 @@ import torch.nn as nn
 
 
 class InputEmbedding(nn.Module):
-    def __init__(self, model_dim: int, vocab_size: int) -> None:
+    def __init__(self, d_model: int, vocab_size: int) -> None:
         super().__init__()
-        self.model_dim: int = model_dim
+        self.d_model: int = d_model
         self.vocab_size: int = vocab_size
-        self.embd: nn.Embedding = nn.Embedding(vocab_size, model_dim)
+        self.embd: nn.Embedding = nn.Embedding(vocab_size, d_model)
 
     @override
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        return self.embd(x) * math.sqrt(self.model_dim)
+        return self.embd(x) * math.sqrt(self.d_model)
 
 
 class PositionalEncoding(nn.Module):
-    __slots__: tuple[str, ...] = ("model_dim", "seq_len", "dropout", "pe")
+    __slots__: tuple[str, ...] = ("d_model", "seq_len", "dropout", "pe")
 
-    def __init__(self, model_dim: int, seq_len: int, dropout: float) -> None:
+    def __init__(self, d_model: int, seq_len: int, dropout: float) -> None:
         super().__init__()
-        self.model_dim: int = model_dim
+        self.d_model: int = d_model
         self.seq_len: int = seq_len
         self.dropout: nn.Dropout = nn.Dropout(dropout)
         self.pe: torch.Tensor
 
-        pe = torch.zeros(seq_len, model_dim)
+        pe = torch.zeros(seq_len, d_model)
         position = torch.arange(0, seq_len, dtype=torch.float).unsqueeze(1)
         div_term = torch.exp(
-            torch.arange(0, model_dim, 2).float() * (-math.log(10000.0) / model_dim)
+            torch.arange(0, d_model, 2).float() * (-math.log(10000.0) / d_model)
         )
         pe[:, 0::2] = torch.sin(position * div_term)
         pe[:, 1::2] = torch.cos(position * div_term)
@@ -62,11 +62,11 @@ class LayerNormalization(nn.Module):
 
 
 class FeedForwardBlock(nn.Module):
-    def __init__(self, model_dim: int, d_ff: int, dropout: float) -> None:
+    def __init__(self, d_model: int, d_ff: int, dropout: float) -> None:
         super().__init__()
-        self.linear1: nn.Linear = nn.Linear(model_dim, d_ff)  # W2,b1
+        self.linear1: nn.Linear = nn.Linear(d_model, d_ff)  # W2,b1
         self.dropout: nn.Dropout = nn.Dropout(dropout)
-        self.linear2: nn.Linear = nn.Linear(d_ff, model_dim)  # w2,b2
+        self.linear2: nn.Linear = nn.Linear(d_ff, d_model)  # w2,b2
 
     @override
     def forward(self, x: torch.Tensor) -> torch.Tensor:
@@ -74,16 +74,16 @@ class FeedForwardBlock(nn.Module):
 
 
 class MultiHeadAttentionBlock(nn.Module):
-    def __init__(self, model_dim: int, h: int, dropout: float) -> None:
+    def __init__(self, d_model: int, h: int, dropout: float) -> None:
         super().__init__()
-        self.model_dim: int = model_dim
+        self.d_model: int = d_model
         self.h: int = h
-        assert model_dim % h == 0, "model_dim is not divisible by h"
-        self.d_k: int = model_dim // h
-        self.wq: nn.Linear = nn.Linear(model_dim, model_dim)
-        self.wk: nn.Linear = nn.Linear(model_dim, model_dim)
-        self.wv: nn.Linear = nn.Linear(model_dim, model_dim)
-        self.wo: nn.Linear = nn.Linear(model_dim, model_dim)
+        assert d_model % h == 0, "d_model is not divisible by h"
+        self.d_k: int = d_model // h
+        self.wq: nn.Linear = nn.Linear(d_model, d_model)
+        self.wk: nn.Linear = nn.Linear(d_model, d_model)
+        self.wv: nn.Linear = nn.Linear(d_model, d_model)
+        self.wo: nn.Linear = nn.Linear(d_model, d_model)
         self.dropout: nn.Dropout = nn.Dropout(dropout)
         self.attention_scores: torch.Tensor
 
@@ -290,27 +290,27 @@ def build_transformer(
     tgt_vocab_size: int,
     src_seq_len: int,
     tgt_seq_len: int,
-    model_dim: int = 512,
+    d_model: int = 512,
     N: int = 6,
     h: int = 8,
     dropout: float = 0.1,
     d_ff: int = 2048,
 ) -> Transformer:
-    src_embd = InputEmbedding(model_dim, src_vocab_size)
-    tgt_embd = InputEmbedding(model_dim, tgt_vocab_size)
-    src_pos = PositionalEncoding(model_dim, src_seq_len, dropout)
-    tgt_pos = PositionalEncoding(model_dim, tgt_seq_len, dropout)
+    src_embd = InputEmbedding(d_model, src_vocab_size)
+    tgt_embd = InputEmbedding(d_model, tgt_vocab_size)
+    src_pos = PositionalEncoding(d_model, src_seq_len, dropout)
+    tgt_pos = PositionalEncoding(d_model, tgt_seq_len, dropout)
 
     encoder_blocks = []
     decoder_blocks = []
     for _ in range(N):
-        encoder_self_attention = MultiHeadAttentionBlock(model_dim, h, dropout)
-        ffw = FeedForwardBlock(model_dim, d_ff, dropout)
+        encoder_self_attention = MultiHeadAttentionBlock(d_model, h, dropout)
+        ffw = FeedForwardBlock(d_model, d_ff, dropout)
         encoder_blocks.append(EncoderBlock(encoder_self_attention, ffw, dropout))
 
-        ffw_2 = FeedForwardBlock(model_dim, d_ff, dropout)
-        decoder_self_attention = MultiHeadAttentionBlock(model_dim, h, dropout)
-        decoder_cross_attention = MultiHeadAttentionBlock(model_dim, h, dropout)
+        ffw_2 = FeedForwardBlock(d_model, d_ff, dropout)
+        decoder_self_attention = MultiHeadAttentionBlock(d_model, h, dropout)
+        decoder_cross_attention = MultiHeadAttentionBlock(d_model, h, dropout)
         decoder_blocks.append(
             DecoderBlock(
                 decoder_self_attention, decoder_cross_attention, ffw_2, dropout
@@ -319,7 +319,7 @@ def build_transformer(
     encoder = Encoder(nn.ModuleList(encoder_blocks))
     decoder = Decoder(nn.ModuleList(decoder_blocks))
 
-    projection_layer = ProjectionLayer(model_dim, tgt_vocab_size)
+    projection_layer = ProjectionLayer(d_model, tgt_vocab_size)
     transformer = Transformer(
         encoder,
         decoder,
