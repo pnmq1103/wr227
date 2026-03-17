@@ -7,21 +7,19 @@
 Transformer \cite{vaswani2017attention} model is initially created for NLP tasks and achieved remarkable success. However, they did not have much impact on computer vision until Alexey Dosovitskiy et al. \cite{rao2021dynamicvit} introduced the Vision Transformer (ViT), which splits the image into many small patches as tokens feed to the model. Although this approach demonstrated strong performance on many Computer Vision tasks, its quadratic complexity due to self-attention making it computationally expensive to process high resolution images. To address this, Microsoft Research proposed Swin Transformer \cite{liu2021swin}, which restricts attention to local windows, inspiring subsequent window-based variants. Other methods reduce attention cost by compressing keys or values using linear projections, strided convolutions, pooling, or patch clustering. Additionally, some variants explore alternative designs such as channel attention and softmax-free attention mechanisms.
 
 \subsection{Linear Attention}
-Linear Attention \cite{shen2021efficient} fixes the quadratic complexity of Softmax attention by using kernel functions to approximate the \(Sim()\) operator, reducing the complexity to linear.
+Linear Attention \cite{shen2021efficient} fixes the quadratic complexity of softmax attention by using kernel functions to approximate the \(Sim()\) operator which reduce the complexity to linear.
 Given an input sequence of $N$ tokens, standard self-attention computes
 
 \[
-  A = \text{Softmax}(QK^T)
+  A = \text{softmax}(\frac{QK^T}{\sqrt{d}}) V
 \]
-
 where $Q,K,V \in \mathbb{R}^{N \times d}$ are the query, key, and value matrices and $d$ is the feature dimension.
 
-To reduce the quadratic complexity of softmax attention, linear attention replaces the softmax operation with a feature map $\phi(\cdot)$:
+To reduce the complexity of softmax attention, linear attention replaces softmax operation with a feature map $\phi(\cdot)$
 
 \[
-  A = \phi(Q)\phi(K)^T
+  A = \phi(Q)\phi(K)^T V
 \]
-
 where $\phi(\cdot)$ is a kernel feature mapping applied element-wise.
 Due to matrix rank constraints,
 
@@ -29,9 +27,10 @@ Due to matrix rank constraints,
   \text{rank}(A) \le d.
 \]
 
-When the number of tokens $N$ is significantly larger than $d$, the attention mechanism must compress the interactions among many tokens into a limited representation. This compression can reduce the model's ability to capture fine-grained relationships among tokens, especially in high-resolution vision tasks. Thus its performance is still largely behind Softmax. Many recent works try to tackle this issue \cite{cai2023efficientvit,han2023flatten,han2024demystify,katharopoulos2020transformers,lu2024softmax,shen2021efficient}.
+When the number of tokens $N$ is significantly larger than $d$, the attention mechanism must compress the interactions among many tokens into a limited representation. This compression can reduce the model's ability to capture fine-grained relationships among tokens, especially in high-resolution vision tasks. Thus its performance is still behind softmax. Many works try to tackle this issue \cite{cai2023efficientvit,han2023flatten,han2024demystify,katharopoulos2020transformers,lu2024softmax,shen2021efficient}.
 FLattenTransformer \cite{han2023flatten} introduces a focused function to enhance the ability of linear attention to concentrate on relevant information, while MLLA \cite{han2024demystify} establishes a link between linear attention and the Mamba model \cite{gu2024mamba}.
-More recently, Qihang Fan et al. \cite{fan2025breaking} addresses a fundamental limitation of linear attention by identifying the low-rank nature of its feature representations as a major cause of performance degradation. To overcome this, the paper proposes Rank-Augmented Linear Attention, which enriches both the key-value buffer and output features to raise their effective rank. Many other approaches either rely on kernel-based approximations of the Softmax function or integrate depthwise convolution to improve feature diversity.
+Many other approaches either rely on kernel-based approximations of the softmax function or integrate depthwise convolution to improve feature diversity.
+Recently, Qihang Fan et al. \cite{fan2025breaking} addresses a fundamental limitation of linear attention by identifying the low-rank nature of its feature representations as a major cause of performance degradation. To overcome this, the paper proposes Rank-Augmented Linear Attention, which enriches both the key-value buffer and output features to raise their effective rank.
 \subsection{Token Pruning}
 
-ViT suffers from high computational cost propotional to the number of input tokens, hence many attempts have been made to reduce the redundant tokens while still keeping high performance. Traditional dynamic methods like DynamicViT \cite{rao2021dynamicvit} and TokenLearner \cite{ryoo2021tokenlearner} adaptively drop or condense tokens. Adaptive pruning technique such as AdaViT \cite{meng2022adavit} use attention metrics or learned masks to select important tokens. Recent methods introduce the use of reinforcement learning to learn the pruning policies. Specifically, Chenglong Lu et al. \cite{lu2025reinforcement} formulates token pruning as a sequential decision making problem with multi-agent RL, where each of the visual token is consider an agent.
+ViT suffers from high computational cost propotional to the number of input tokens, hence many attempts have been made to reduce the redundant tokens while keeping the high performance. Traditional dynamic methods like DynamicViT \cite{rao2021dynamicvit} and TokenLearner \cite{ryoo2021tokenlearner} adaptively drop or condense tokens. Adaptive pruning technique such as AdaViT \cite{meng2022adavit} use attention metrics or learned masks to select important tokens. Recent methods introduce the use of RL to learn the pruning policies. Specifically, Chenglong Lu et al. \cite{lu2025reinforcement} formulates token pruning as a sequential decision making problem with multi-agent RL, where each of the visual token is consider an agent.

@@ -250,6 +250,15 @@ def train_model() -> None:
         # backward
         loss.backward()
 
+        # gradient clipping -> limit speed
+        max_norm: float = 1.0
+        global_norm: float = math.sqrt(sum(p.grad**2 for p in params))
+
+        if global_norm > max_norm:
+            clip_coef: float = max_norm / (global_norm + 1e-6)
+            for p in params:
+                p.grad *= clip_coef
+
         # adam update
         lr_t: float = learning_rate * (1 - step / num_steps)
         for i, p in enumerate(params):
