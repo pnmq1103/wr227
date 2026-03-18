@@ -25,7 +25,8 @@
 - [x] Format: 2 columns
 - [ ] Refine introduction section
 - [ ] Revise RL method: 2 states keep and prune
-- [ ] Choose other dataset to avoid overfitting
+- [ ] Implement other standard token pruning methods
+- [ ] Preprocess and analyze another dataset to avoid overfitting
 - [ ] Benchmark and analyze performance of the models
 
 - introduction: ViT time -> different approaches [citations] -> linear -> underperform
