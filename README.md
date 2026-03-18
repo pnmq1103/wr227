@@ -24,6 +24,8 @@
 - [x] Vision Transformer
 - [x] Format: 2 columns
 - [ ] Revise RL method: 2 states keep and prune
+- [ ] Implement other standard token pruning methods
+- [ ] Preprocess and analyze dataset
 - [ ] Benchmark and analyze performance of the models
 
 - [Literature Review](https://docs.google.com/spreadsheets/d/13qwilvCUy6kqlFihILLLDaHHqWTQjU1UKLHDgjB9DzE/)
