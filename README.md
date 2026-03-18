@@ -23,7 +23,16 @@
 - [x] Implement Transformer architecture
 - [x] Vision Transformer
 - [x] Format: 2 columns
+- [ ] Refine introduction section
 - [ ] Revise RL method: 2 states keep and prune
+- [ ] Choose other dataset to avoid overfitting
 - [ ] Benchmark and analyze performance of the models
+
+- introduction: ViT time -> different approaches [citations] -> linear -> underperform
+  -> different approaches linear [citations] -> rl-based token pruning -> combine linear + rl with appropriate reward function.
+- experiment:
+  - train other models on our choosen dataset and compare
+  - benchmark: a metric for time-performance (param,flops) trade-off
+- ablation study: remove components of our model (can substitute with other comparable components)
 
 - [Literature Review](https://docs.google.com/spreadsheets/d/13qwilvCUy6kqlFihILLLDaHHqWTQjU1UKLHDgjB9DzE/)
