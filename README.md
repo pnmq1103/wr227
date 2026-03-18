@@ -17,6 +17,11 @@
 - [ ] PA5: Conclusion and Abstract
 - [ ] In-class Presentation
 
+## Material
+
+- [Google Drive](https://drive.google.com/drive/folders/1JU3nthPxffqqXxcfkusvtmB67QRu5dmF)
+- [Literature Review](https://docs.google.com/spreadsheets/d/13qwilvCUy6kqlFihILLLDaHHqWTQjU1UKLHDgjB9DzE/)
+
 ## To-do List
 
 - [x] More literature survey
@@ -35,5 +40,3 @@
   - train other models on our choosen dataset and compare
   - benchmark: a metric for time-performance (param,flops) trade-off
 - ablation study: remove components of our model (can substitute with other comparable components)
-
-- [Literature Review](https://docs.google.com/spreadsheets/d/13qwilvCUy6kqlFihILLLDaHHqWTQjU1UKLHDgjB9DzE/)
