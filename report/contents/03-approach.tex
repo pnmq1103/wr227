@@ -1,231 +1,120 @@
 \section{Method}
-We propose a RL (RL) based token routing framework with a shared memory bank to improve the effectiveness of linear attention when applying to a ViT for high resolution images.
+We propose an RL weighting framework that augments a Vision Transformer (ViT) with a continuous, stochastic Actor-Critic routing module.
+\subsection{Chunkwise Formulation of Linear Attention}
+Standard linear attention leverages the associative property to reduce complexity to $\mathcal{O}(N)$. The output for the $i$-th query is typically computed using a global normalization term:
+\begin{equation}
+    O_i = \frac{\phi(Q_i) \sum_{j=1}^N \phi(K_j)^\top V_j}{\phi(Q_i) \sum_{j=1}^N \phi(K_j)^\top}
+\end{equation}
 
-\subsection{Overall Architecture}
-Our study augments a standard ViT with a RL based token routing module and linear attention mechanism. Given an input image, the ViT patch embedding first converts the image into a sequence of $N$ patch tokens.
-Instead of processing all tokens through every transformer layer, we introduce a lightweight policy network $\pi_\theta$ that dynamically routes tokens at selected stage transitions. The policy assigns each token an action, those are \textit{keep}, \textit{remove}, \textit{store}, or \textit{retrieve}, which allow the model to filter redundant tokens and preserve informative ones.
-Tokens assigned \textit{keep} or \textit{retrieve} actions are packed into a shortened sequence of length $N_{\text{active}}$ and passed to the subsequent linear attention blocks. The attention output is computed as
+To enable sequential importance assignment, we reformulate this into a causal, chunkwise process. The input sequence of $N$ tokens is partitioned into $T$ non-overlapping sequential chunks of size $C$. At each step $t \in \{1, \dots, T\}$, the backbone processes the current chunk into local Queries ($Q_t$), Keys ($K_t$), and Values ($V_t$).
 
-\[
-  O = \phi(Q_{a})\big(\phi(K_{a})^T V_{a}\big)
-\]
+Rather than computing a full sequence matrix, we maintain two recurrent memory representations to capture global context. The numerator state $S_t \in \mathbb{R}^{D \times D}$ accumulates the cross-covariance of keys and values, while the denominator state $Z_t \in \mathbb{R}^{D \times 1}$ tracks the normalization factor:
+\begin{equation}
+    S_t = S_{t-1} + \phi(K_t)^\top V_t
+\end{equation}
+\begin{equation}
+    Z_t = Z_{t-1} + \sum_{i \in \text{chunk } t} \phi(K_{i, t})^\top
+\end{equation}
 
-We aim to make $N_{\text{active}} \ll N$ while maintaining the model's ability to focus on important tokens. Meanwhile, contextual information from discarded or stored tokens can be preserved through the shared memory mechanism, allowing global context to bypass the linear attention bottleneck.
+The attention output for the current chunk $t$ is then computed as:
+\begin{equation}
+    O_t = \frac{\phi(Q_t) S_t}{\phi(Q_t) Z_t}
+\end{equation}
 
-\begin{figure*}
-  \centering
-  \begin{tikzpicture}[
-    scale=0.65,
-    transform shape,
-    font=\sffamily\small,
-    >={Stealth[scale=1.1]},
-    node distance=1.6cm and 1.4cm,
-    block/.style={
-        draw,
-        rounded corners,
-        fill=blue!6,
-        minimum width=2.8cm,
-        minimum height=0.9cm,
-        align=center
-      },
-    policy/.style={
-        draw,
-        rounded corners,
-        fill=red!8,
-        minimum width=3.2cm,
-        minimum height=1cm,
-        align=center,
-        font=\bfseries
-      },
-    action/.style={
-        draw,
-        rounded corners,
-        fill=gray!10,
-        minimum width=1.8cm,
-        minimum height=0.7cm,
-        align=center
-      },
-    memory/.style={
-        draw,
-        cylinder,
-        shape border rotate=90,
-        aspect=0.25,
-        fill=green!8,
-        minimum height=1.4cm,
-        minimum width=2.4cm,
-        align=center
-      },
-    attention/.style={
-        draw,
-        rounded corners,
-        fill=orange!12,
-        minimum width=4.2cm,
-        minimum height=1.2cm,
-        align=center,
-        font=\bfseries
-      }
-    ]
+By reformulating linear attention into a recurrent, chunkwise execution, we isolate the processing of each image segment into a discrete-time Markov Decision Process (MDP). This structure allows a routing agent to sequentially determine the importance of tokens based on local information, global history, and remaining computational resources.
 
-    %------------------------------------------------
-    % Input pipeline
-    %------------------------------------------------
+\subsection{Markov Decision Process Formulation}
 
-    \node[block] (image) {Input Image};
+By reformulating linear attention into a recurrent, chunkwise execution, we isolate the processing of each image segment into a discrete-time Markov Decision Process (MDP). This structure allows a routing agent to sequentially determine the importance of tokens based on local information, accumulated global memory, and remaining computational resources.
 
-    \node[block, right=of image] (patch)
-    {Patch Embedding};
+\subsubsection{State Space ($\mathcal{S}$)}
+At each chunk step $t$, the agent observes a causal state $s_t$ defined as:
+\begin{equation}
+s_t = \left[ K_t \parallel \mathrm{Proj}(S_{t-1}) \parallel \mathrm{Proj}(Z_{t-1}) \parallel B_t \right]
+\end{equation}
 
-    \node[block, right=of patch] (tokens)
-    {Token Sequence\\$X \in \mathbb{R}^{N\times d}$};
-
-    %------------------------------------------------
-    % Policy network
-    %------------------------------------------------
-
-    \node[policy, below=1.8cm of tokens] (policy)
-    {Routing Policy $\pi_\theta$};
-
-    \draw[->] (tokens) -- (policy);
-
-    %------------------------------------------------
-    % Actions
-    %------------------------------------------------
-
-    \node[action, below left=of policy] (remove)
-    {Remove};
-
-    \node[action, below=of policy] (store)
-    {Store};
-
-    \node[action, below right=of policy] (keep)
-    {Keep};
-
-    \node[action, right=of keep] (retrieve)
-    {Retrieve};
-
-    \draw[->] (policy) -- (remove);
-    \draw[->] (policy) -- (store);
-    \draw[->] (policy) -- (keep);
-    \draw[->] (policy) -- (retrieve);
-
-    %------------------------------------------------
-    % Memory
-    %------------------------------------------------
-
-    \node[memory, below=1.4cm of store] (memory)
-    {Shared Memory\\Bank $B$};
-
-    \draw[->] (store) -- node[right,font=\scriptsize]{} (memory);
-
-    \draw[->, dashed, thick, green!50!black]
-    (memory) -| node[pos=0.25, above,font=\scriptsize]
-      {context retrieval}
-    (retrieve);
-
-    %------------------------------------------------
-    % Active tokens
-    %------------------------------------------------
-
-    \node[block, below=2.2cm of keep]
-    (active)
-    {Active Tokens\\$N_{\text{active}} \ll N$};
-
-    \draw[->] (keep) -- (active);
-    \draw[->] (retrieve) -- (active);
-
-    %------------------------------------------------
-    % Linear Attention
-    %------------------------------------------------
-
-    \node[attention, below=of active] (attn)
-    {Linear Attention\\
-      $O=\phi(Q_a)(\phi(K_a)^T V_a)$};
-
-    \draw[->] (active) -- (attn);
-
-    %------------------------------------------------
-    % Input arrows
-    %------------------------------------------------
-
-    \draw[->] (image) -- (patch);
-    \draw[->] (patch) -- (tokens);
-
-    %------------------------------------------------
-    % Action space box
-    %------------------------------------------------
-
-    \begin{scope}[on background layer]
-
-      \node[
-        draw,
-        dashed,
-        rounded corners,
-        fill=gray!3,
-        fit=(remove)(store)(keep)(retrieve),
-        inner sep=8pt
-      ] (actions) {};
-
-      \node[above right,font=\bfseries\scriptsize,color=gray!70]
-      at (actions.north west)
-      {Action Space $\mathcal{A}$};
-
-    \end{scope}
-  \end{tikzpicture}
-  \caption{Overall Method}
-\end{figure*}
-
-\subsection{RL-based Token Routing}
-
-To tackle the limitations of linear attention, we introduce a lightweight
-RL policy network that dynamically routes tokens
-during inference. Given a token representation $x_i \in \mathbb{R}^d$, the policy network
-$\pi_\theta$ computes an action distribution
-
-\[
-  \pi_\theta(a_i \mid x_i) = \text{softmax}(W_2 \sigma(W_1 x_i)),
-\]
-where $W_1$ and $W_2$ are learnable parameters and $\sigma(\cdot)$ is a nonlinear activation function. The policy selects an action
-
-\[
-  a_i \in \{\text{keep}, \text{remove}, \text{store}, \text{retrieve}\}.
-\]
-
-Each action modifies the token flow as follows
+The components are:
 \begin{itemize}
-  \item \textbf{Keep}: the token remains in the active sequence and participates
-        in linear attention.
-  \item \textbf{Remove}: the token is discarded to reduce sequence length.
-  \item \textbf{Store}: the token is compressed into a shared memory bank.
-  \item \textbf{Retrieve}: the token receives contextual information from the memory bank.
+    \item \textbf{Local Features ($K_t \in \mathbb{R}^{C \times D}$):} Visual features of the current chunk.
+    
+    \item \textbf{Memory Projection ($\mathrm{Proj}(S_{t-1}) \in \mathbb{R}^{D}$):} A learned projection of the accumulated memory matrix $S_{t-1} \in \mathbb{R}^{D \times D}$.
+    
+    \item \textbf{Normalization Projection ($\mathrm{Proj}(Z_{t-1}) \in \mathbb{R}^{D}$):} A projection of the normalization accumulator $Z_{t-1}$, encoding the effective mass of stored tokens.
+    
+    \item \textbf{Dynamic Budget ($B_t \in [0,1]$):} Remaining computational budget.
 \end{itemize}
 
-Let $\mathcal{A}$ denote the set of tokens selected by the policy to remain
-active. Linear attention is then computed only over this subset $N_{\text{active}} = |\mathcal{A}|$, which reduces the effective token count.
-The policy is trained with RL to maximize a reward that
-balances model performance and computational efficiency.
+\subsubsection{Action Space ($\mathcal{A}$)}
+For each chunk of size $C$, the Actor $\pi_\theta$ outputs:
+\begin{equation}
+a_t = \{ w_{1,t}, w_{2,t}, \dots, w_{C,t} \}, \quad w_{i,t} \in (0,1)
+\end{equation}
 
-\subsection{Shared Memory Bank}
+The weights are sampled from a squashed Gaussian:
+\begin{equation}
+a_t \sim \mathrm{SquashedGaussian}(\mu_\theta(s_t), \sigma_\theta(s_t))
+\end{equation}
 
-Tokens assigned to the \textit{store} action are aggregated into a shared memory representation:
+These weights are independent and do not sum to one, allowing the agent to suppress uninformative tokens, dropping the whole chunk if needed.
 
-\[
-  B = \frac{1}{|\mathcal{S}|} \sum_{j \in \mathcal{S}} x_j
-\]
-where $\mathcal{S}$ denotes the set of stored tokens.
+\subsubsection{Transition Dynamics}
+The transition to $s_{t+1}$ is governed by deterministic updates of the memory and normalization accumulators.
 
-Tokens requesting contextual information retrieve it through a residual update
+The memory update is:
+\begin{equation}
+S_t = S_{t-1} + \left( (w_t \odot \phi(K_t))^\top V_t \right)
+\end{equation}
 
-\[
-  \hat{x}_i = x_i + W_r B
-\]
-where $W_r$ is a learnable projection matrix and $B$ is the bank.
+The normalization term evolves as:
+\begin{equation}
+Z_t = Z_{t-1} + \sum_{i=1}^{C} w_{i,t} \, \phi(K_{i,t})^\top ,
+\end{equation}
+where $\phi(\cdot)$ is the feature map associated with linear attention, and $\odot$ denotes element-wise scaling of token features by their corresponding weights.
 
-This memory pathway allows global contextual information to bypass the linear attention bottleneck while keeping the computational cost low.
+The budget follows:
+\begin{equation}
+B_{t+1} = B_t - \frac{1}{N} \sum_{i=1}^{C} w_{i,t}
+\end{equation}
 
-\subsection{Training Objective}
+\subsubsection{Reward Function ($\mathcal{R}$)}
+A terminal reward $R$ is provided at $t = T$:
+\begin{equation}
+R = \mathrm{TaskMetric} - \lambda_{\text{penalty}} \cdot \max(0, 1 - B_T)
+\end{equation}
 
-The routing policy is trained using RL. The reward function balances two objectives: preserving downstream task performance and minimizing the number of active tokens. The reward is
-\[
-  R = \alpha \, \text{Acc} - \beta \frac{N_{\text{active}}}{N},
-\]
-where $\text{Acc}$ represents task performance, $\alpha$ and $\beta$ control the trade-off between accuracy and efficiency.
+where:
+\begin{itemize}
+    \item \textbf{TaskMetric:} Task-specific performance (e.g., mAP or accuracy).
+    \item \textbf{Budget Penalty:} Penalizes exceeding the allocated token budget.
+\end{itemize}
+
+This formulation encourages the agent to preserve informative tokens while respecting computational constraints.
+
+\subsection{Squashed Gaussian Actor-Critic Network}
+To provide the flexibility to down-weight or entirely omit uninformative chunks, we model the routing policy $\pi_\theta(a_t \mid s_t)$ as a Squashed Gaussian distribution[cite: 10]. This independent weighting avoids the mathematical instability of discrete gates and the competitive constraints of Softmax[cite: 10, 11]. The Actor network computes parameters for an unbounded Normal distribution[cite: 12, 13]:
+\begin{equation}
+    \mu_\theta = \text{MLP}_\mu(s_t), \quad \sigma_\theta = \text{Softplus}(\text{MLP}_\sigma(s_t)) + \epsilon
+\end{equation}
+
+During training, actions are sampled and squashed via a hyperbolic tangent to the valid continuous weighting space[cite: 13]:
+\begin{equation}
+    w_t = \frac{\tanh(x) + 1}{2}, \quad x \sim \mathcal{N}(\mu_\theta, \sigma_\theta^2)
+\end{equation}
+By decoupling weights from a global sum, the Actor can assign near-zero weights to every token in a redundant chunk, effectively "muting" its contribution to the global memory $S_t$. To maintain mathematical integrity for PPO, the log-probability is corrected using the Jacobian trace of the Tanh transformation:
+\begin{equation}
+    \log \pi(w_t) = \log p(x) - \sum \log(1 - \tanh^2(x) + \epsilon)
+\end{equation}
+
+\subsection{Pretraining: Scale-Aligned Information Distillation}
+Phase 0 initializes the Actor using empirical Fisher Information ($\mathcal{I}_i$) as a saliency oracle[cite: 14, 15]. These scores are normalized to $\tilde{\mathcal{I}}_i \in [0, 1]$[cite: 17, 18]. The Actor is trained via supervised learning to align its mean prediction $w_{\mu}$ with this informational utility[cite: 19]:
+\begin{equation}
+    \mathcal{L}_{\text{Actor}} = \mathbb{E} \left[ \left( w_{\mu}(s_t) - \tilde{\mathcal{I}}_t \right)^2 \right]
+\end{equation}
+
+\subsection{Finetuning: Task-Specific Reward Optimization}
+In Phase 1, the Actor is optimized via PPO to maximize a task-specific reward $R$[cite: 19]. The environment enforces a decreasing budget $B_t$[cite: 20]. To prevent memory stagnation when tokens are aggressively down-weighted, we introduce State Dilution, injecting a fraction ($\gamma$) of the global context $G$ back into the memory[cite: 21, 22]:
+\begin{equation}
+    S_t = S_{t-1} + (w_t \odot K_t)^\top V_t + \gamma \cdot (1 - \bar{w}_t) \cdot G^\top V_{\text{global}}
+\end{equation}
+
+During deployment (Phase 2), a hard threshold $\tau$ enables physical token purging[cite: 23, 24]. Surviving tokens retain their continuous scaling factors $w_{\text{infer}}$, ensuring the "volume" of information matches the Actor's trained importance weighting[cite: 25].

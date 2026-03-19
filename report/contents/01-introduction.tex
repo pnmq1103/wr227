@@ -21,7 +21,7 @@ However, linear attention inability to model complex information yields unsatisf
 Many works have attempted to improve linear attention by tackling its low-rank nature \cite{fan2025breaking}.
 Linear attention replaces softmax with kernal feature maps which causes the loss of sharpness.
 This mean that it can not be as selective as softmax attention which can place most of its attention weights on a few relevant tokens.
-To address this, we apply \textbf{token pruning} \cite{rao2021dynamicvit,lu2025reinforcement} which help refine the input for linear attention.
+To address this, we apply a RL \textbf{weighting} mechanism for each token, and extended to \textbf{token pruning} \cite{rao2021dynamicvit,lu2025reinforcement} which help refine the input for linear attention.
 With this approach, we aim to speed up the training and inference time of the model without sacrificing its performance.
 % details
 
