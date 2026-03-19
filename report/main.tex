@@ -1,47 +1,68 @@
-\documentclass[runningheads]{llncs}
+% CVPR 2026 Paper Template; see https://github.com/cvpr-org/author-kit
+
+\documentclass[10pt,twocolumn,letterpaper]{article}
+
+%%%%%%%%% PAPER TYPE  - PLEASE UPDATE FOR FINAL VERSION
+% \usepackage{cvpr}              % To produce the CAMERA-READY version
+% \usepackage[review]{cvpr}      % To produce the REVIEW version
+\usepackage[pagenumbers]{cvpr} % To force page numbers, e.g. for an arXiv version
+
+% Import additional packages in the preamble file, before hyperref
+\input{preamble}
+
+% It is strongly recommended to use hyperref, especially for the review version.
+% hyperref with option pagebackref eases the reviewers' job.
+% Please disable hyperref *only* if you encounter grave issues,
+% e.g. with the file validation for the camera-ready version.
 %
-\usepackage[T1]{fontenc}
-% Used for displaying a sample figure. If possible, figure files should be included in EPS format.
-\usepackage{graphicx}
-% Display URLs in blue roman font according to Springer's eBook style:
-\usepackage{hyperref}
+% If you comment hyperref and then uncomment it, you should delete *.aux before re-running LaTeX.
+% (Or just hit 'q' on the first LaTeX run, let it finish, and you should be clear).
+\definecolor{cvprblue}{rgb}{0.21,0.49,0.74}
+\usepackage[pagebackref,breaklinks,colorlinks,allcolors=cvprblue]{hyperref}
+
 \usepackage{orcidlink}
+\usepackage{booktabs}
+\usepackage{multirow}
+\usepackage{makecell}
+\usepackage{graphicx}
 \usepackage{color}
-\usepackage{amsmath}
-\usepackage{amssymb}
+\usepackage{multirow}
+\usepackage{rotate}
 \usepackage{tikz}
-\usepackage{float}
 \usetikzlibrary{arrows.meta, positioning, fit, backgrounds, shapes.geometric}
-\renewcommand\UrlFont{\color{blue}\rmfamily}
-\urlstyle{rm}
-\usepackage[margin=1in]{geometry}
+
+%%%%%%%%% PAPER ID  - PLEASE UPDATE
+\def\paperID{*****} % *** Enter the Paper ID here
+\def\confName{CVPR}
+\def\confYear{2026}
+
+%%%%%%%%% TITLE
+\title{Improving Vision Transformer's Time Perfomace via Linear Attention and Token Pruning}
+
+%%%%%%%%% AUTHORS
+\author{Chi-Van Vong \orcidlink{0009-0001-8988-4791}, Minh-Quan Pham Nguyen \orcidlink{0009-0003-7063-3575}\\
+% Additional authors and addresses can be added with ``\and'',
+% just like the second author.
+% To save space, use either the email address or home page, not both
+University of Science, Vietnam National University Ho Chi Minh City, Vietnam\\
+{\tt\small \{vcvan2424,pnmquan2414\}@apcs.fitus.edu.vn}
+}
 
 \begin{document}
-%
-\title{Improving Vision Transformer's Time Perfomace via Linear Attention and Token Pruning}
-%
-\titlerunning{ }
-%
-\author{Chi-Van Vong \orcidlink{0009-0001-8988-4791}\and Minh-Quan Pham Nguyen \orcidlink{0009-0003-7063-3575}}
-%
-\authorrunning{ }
-%
-\institute{University of Science, Vietnam National University Ho Chi Minh City, Vietnam \\ \email{\{vcvan2424,pnmquan2414\}@apcs.fitus.edu.vn}}
-
 \maketitle
-%
-\input{contents/00-abstract.tex}
-\begin{multicols}{2}
-  \input{contents/01-introduction.tex}
-  \input{contents/02-related_work.tex}
-  \input{contents/03-approach.tex}
-  \input{contents/04-experiment.tex}
-  \input{contents/05-results.tex}
-  \input{contents/06-discussion.tex}
-  \input{contents/07-conclusion.tex}
-\end{multicols}
-%
-\bibliographystyle{splncs04}
-\bibliography{bibliography}
-%
+\input{sec/0_abstract}
+\input{sec/1_intro}
+\input{sec/2_related.tex}
+\input{sec/3_approach.tex}
+\input{sec/4_experiment.tex}
+\input{sec/5_conclusion.tex}
+{
+  \small
+  \bibliographystyle{ieeenat_fullname}
+  \bibliography{main}
+}
+
+% WARNING: do not forget to delete the supplementary pages from your submission
+% \input{sec/X_suppl}
+
 \end{document}

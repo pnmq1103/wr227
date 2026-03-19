@@ -12,20 +12,22 @@ Given an input sequence of $N$ tokens, standard self-attention computes
 
 \begin{equation}
   A = \text{softmax}(\frac{QK^T}{\sqrt{d}}) V
+  \label{eq:softmax}
 \end{equation}
-\
 where $Q,K,V \in \mathbb{R}^{N \times d}$ are the query, key, and value matrices and $d$ is the feature dimension.
 
 To reduce the complexity of softmax attention, linear attention replaces softmax operation with a feature map $\phi(\cdot)$
 
 \begin{equation}
   A = \phi(Q)\phi(K)^T V
+  \label{eq:linear}
 \end{equation}
 where $\phi(\cdot)$ is a kernel feature mapping applied element-wise.
 Due to matrix rank constraints,
 
 \begin{equation}
   \text{rank}(A) \le d.
+  \label{eq:linear_rank}
 \end{equation}
 
 When the number of tokens $N$ is significantly larger than $d$, the attention mechanism must compress the interactions among many tokens into a limited representation. This compression can reduce the model's ability to capture fine-grained relationships among tokens, especially in high-resolution vision tasks. Thus its performance is still behind softmax. Many works try to tackle this issue \cite{cai2023efficientvit,han2023flatten,han2024demystify,katharopoulos2020transformers,lu2024softmax,shen2021efficient}.

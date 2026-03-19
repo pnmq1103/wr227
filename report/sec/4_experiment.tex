@@ -18,6 +18,15 @@ For localization tasks, we use \textbf{COCO} 2017 which is widely recognized for
 \subsection{Implementation Environment}
 The framework is implemented in \textbf{Python} using \textbf{PyTorch}. All experiments, including training and inference profiling, are conducted on a local computer with a single NVIDIA RTX 5060Ti 16GB.
 
+\subsection{Results}
+
+\begin{itemize}
+  \item object detection: RALA, Ours, RMT-T
+  \item image classification: RALA, Ours, MLLA-T
+  \item inference speed
+  \item ablation study: softmax, linear, non RL
+\end{itemize}
+
 % \subsection{Datasets}
 
 % \subsection{Evaluation Protocol}
@@ -109,3 +118,43 @@ The framework is implemented in \textbf{Python} using \textbf{PyTorch}. All expe
 %   \item Measurement of performance change to quantify each component’s importance.
 %   \item Justification of design decisions based on empirical evidence.
 % \end{itemize}
+
+\begin{table}[htbp]
+  \centering
+  \begin{tabular}{c|c|cc|c}
+    \hline
+    Cost & Model & Params(M) & FLOPs(G) & Top1-acc(\%) \\
+    \hline
+    \multirow{3}{*}{\rotatebox[origin=c]{90}{\makecell{$\sim 2.5$G}}}
+         & RALA  &           &          & \textbf{}    \\
+         & RMT-T &           &          & \textbf{}    \\
+         & Ours  &           &          & \textbf{}    \\
+    \hline
+  \end{tabular}
+  \vspace{2mm}
+  \caption{Classification results of different general backbones on ImageNet-100}
+  \label{tab:classification}
+\end{table}
+
+\begin{table}[htbp]
+  \centering
+  \begin{tabular}{c|c|cc|c}
+    \hline
+    Cost & Model  & Params(M) & FLOPs(G) & Top1-acc(\%) \\
+    \hline
+    \multirow{3}{*}{\rotatebox[origin=c]{90}{\makecell{$\sim 2.5$G}}}
+         & RALA   &           &          & \textbf{}    \\
+         & MLLA-T &           &          & \textbf{}    \\
+         & Ours   &           &          & \textbf{}    \\
+    \hline
+  \end{tabular}
+  \vspace{2mm}
+  \caption{Object detection results of different general backbones on COCO 2017}
+  \label{tab:object_detection}
+\end{table}
+
+\subsection{Ablation Study}
+Need to conduct ablation study.
+
+% explain why it works or not?
+% what's next?
