@@ -1,329 +1,407 @@
 \section{Method}
-We adopt the method from RALA for solving the low rank problem, and replace the weighting component with an RL weighting framework which is a continuous, stochastic Actor-Critic module. We aim to add a budget constraint, and layer wise information into the weighting to improve the linear attention speed and performance. 
-\subsection{Architecture Overview} 
-An input image is tokenized into $N$ patch embeddings and partitioned into $T$ sequential chunks of size $C$. A linear-attention ViT backbone processes each chunk, projecting it into local queries $Q_t$, keys $K_t$, and values $V_t$ and maintaining a recurrent memory $(S_t, Z_t)$ in place of a full attention matrix. At each step $t$, an Actor-Critic module observes the causal state local features, compressed memory, and remaining budget—and emits per-token weights $w_t \in (0,1)^C$. These weights gate the memory update $S_t = S_{t-1} + (w_t \odot \phi(K_t))^\top V_t$. After all $T$ chunks, the final state $(S_T, Z_T)$ is consumed by a task head (classifier or detection decoder), which produces the terminal reward.
- 
-Training follows a two-phase curriculum. \textbf{Phase~1} bootstraps the routing module from Fisher Information saliency targets, avoiding the policy collapse that arises when RL is applied cold to a high-dimensional visual state. \textbf{Phase~2} fine-tunes the full system end-to-end on the downstream task via PPO with Generalized Advantage Estimation. During inference,  stochastic sampling is disabled, the Actor's deterministic outputs are hard-thresholded at $\tau$, physically pruning low-weight tokens from the GPU buffer and yielding exact FLOP reductions.
+We augment a linear-attention ViT with a continuous Actor-Critic routing module that operates jointly over two recurrent axes: spatial chunks within each layer, and depth across layers. The routing policy observes both what the current layer has accumulated so far and what the previous layer retained globally, enabling depth-aware token suppression without any explicit layer-index embedding.
 
+%------------------------------------------------------------------
+\subsection{Architecture Overview}
+%------------------------------------------------------------------
+An input image is tokenised into $N$ patch embeddings and partitioned into $T$ sequential chunks of size $C$. The backbone has $L$ transformer layers; each layer $\ell \in \{1,\dots,L\}$ maintains its own recurrent memory $(S_{\ell,t},\, Z_{\ell,t})$ initialised to zero at the start of that layer. At each step $(\ell, t)$, the Actor-Critic observes a causal state encoding local features, the within-layer memory accumulated so far, the \emph{completed} memory from the previous layer, and the remaining compute budget. It emits continuous per-token weights $w_{\ell,t}$ that gate the memory update, softly suppressing uninformative tokens. After all $T$ chunks, the completed memory $(S_{\ell,T}, Z_{\ell,T})$ is passed to layer $\ell{+}1$ as cross-layer context. The final memory $(S_{L,T}, Z_{L,T})$ feeds a task head whose output drives the terminal RL reward.
+
+Training follows a two-phase curriculum. \textbf{Phase~1} bootstraps the Actor and Critic from Fisher Information saliency targets, avoiding representation collapse when RL is applied to a randomly initialised policy. \textbf{Phase~2} fine-tunes the full system end-to-end via PPO with Generalized Advantage Estimation. At inference, stochastic sampling is disabled; weights below a hard threshold $\tau$ physically purge tokens from the GPU buffer, yielding exact FLOP reductions.
 \begin{figure*}
   \centering
   \resizebox{\textwidth}{!}{%
   \begin{tikzpicture}[
     font=\small,
     >={Stealth[scale=1.1]},
-    node distance=1.4cm and 1.6cm,
     block/.style={
-      draw, rounded corners=4pt,
-      fill=blue!6, draw=blue!30,
-      minimum width=2.8cm, minimum height=0.85cm,
+      draw, rounded corners=4pt, fill=blue!6, draw=blue!30,
+      minimum width=3.0cm, minimum height=0.9cm,
       align=center, inner sep=4pt
     },
     phase/.style={
-      draw, rounded corners=4pt,
-      fill=gray!7, draw=gray!40,
-      minimum width=2.8cm, minimum height=0.85cm,
+      draw, rounded corners=4pt, fill=gray!7, draw=gray!35,
+      minimum width=3.0cm, minimum height=0.9cm,
       align=center, inner sep=4pt
     },
     actor/.style={
-      draw, rounded corners=4pt,
-      fill=red!8, draw=red!35,
-      minimum width=3.8cm, minimum height=1.1cm,
+      draw, rounded corners=4pt, fill=red!8, draw=red!35,
+      minimum width=4.2cm, minimum height=1.1cm,
       align=center, inner sep=5pt
     },
     memory/.style={
       draw, cylinder, shape border rotate=90, aspect=0.22,
       fill=green!8, draw=green!40,
-      minimum height=1.4cm, minimum width=2.6cm,
+      minimum height=1.5cm, minimum width=2.8cm,
       align=center
     },
     gate/.style={
-      draw, rounded corners=4pt,
-      fill=orange!10, draw=orange!40,
-      minimum width=2.8cm, minimum height=0.85cm,
+      draw, rounded corners=4pt, fill=orange!10, draw=orange!40,
+      minimum width=2.8cm, minimum height=0.9cm,
       align=center, inner sep=4pt
     },
-    head/.style={
-      draw, rounded corners=4pt,
-      fill=purple!8, draw=purple!35,
+    xmem/.style={
+      draw, rounded corners=4pt, fill=teal!8, draw=teal!40,
       minimum width=3.0cm, minimum height=0.9cm,
       align=center, inner sep=4pt
     },
-    reward/.style={
-      draw, rounded corners=4pt,
-      fill=yellow!12, draw=yellow!50!black,
-      minimum width=2.8cm, minimum height=0.85cm,
+    head/.style={
+      draw, rounded corners=4pt, fill=purple!8, draw=purple!35,
+      minimum width=3.2cm, minimum height=0.9cm,
       align=center, inner sep=4pt
     },
-    annot/.style={font=\scriptsize, text=gray!70},
-    larrow/.style={->, thick},
-    darrow/.style={->, dashed, gray!60},
-    rarrow/.style={->, thick, dashed, green!50!black}
+    reward/.style={
+      draw, rounded corners=4pt, fill=yellow!12, draw=yellow!50!black,
+      minimum width=3.2cm, minimum height=0.9cm,
+      align=center, inner sep=4pt
+    },
+    annot/.style={font=\scriptsize, text=gray!65},
+    la/.style={->, thick},
+    da/.style={->, dashed, gray!55},
+    ra/.style={->, thick, dashed, green!55!black},
+    xa/.style={->, thick, teal!60!black}
   ]
 
-  % ---- ROW 0: input pipeline ----
-  \node[block]  (img)    at (0,   0) {Input Image};
-  \node[block]  (patch)  at (4.5, 0) {Patch Embed\\$N$ tokens};
-  \node[block]  (chunk)  at (9,   0) {Chunk $t$\\$K_t,Q_t,V_t\in\mathbb{R}^{C\times D}$};
-  \node[phase]  (gctx)   at (14,  0) {Running context\\$G_t=Z_{t-1}/(t{-}1)$};
+  %------------------------------------------------------------
+  % ROW 0 — input tokenisation
+  %------------------------------------------------------------
+  \node[block]  (img)   at (0,    0) {Input image};
+  \node[block]  (patch) at (4.8,  0) {Patch embed\\$N$ tokens};
+  \node[block]  (chunk) at (9.6,  0) {Chunk $(\ell,t)$\\
+                                       $K_{\ell,t},Q_{\ell,t},V_{\ell,t}$};
 
-  \draw[larrow] (img)   -- (patch);
-  \draw[larrow] (patch) -- (chunk);
-  \draw[larrow] (chunk) -- (gctx);
+  \draw[la] (img)   -- (patch);
+  \draw[la] (patch) -- (chunk);
 
-  % ---- ROW 1: memory + state assembly ----
-  \node[memory] (mem_prev) at (0,   -3.5) {Memory\\$S_{t-1},Z_{t-1}$};
-  \node[block]  (state)    at (9,   -3.5) {Causal State $s_t$\\
-    $[K_t \parallel \mathrm{Proj}(S_{t-1})$\\
-    $\parallel\,\mathrm{Proj}(Z_{t-1})\parallel B_t]$};
-  \node[phase]  (budget)   at (14, -3.5) {Budget\\$B_t\in[0,1]$};
+  %------------------------------------------------------------
+  % ROW 1 — state assembly
+  %------------------------------------------------------------
+  \node[memory] (wmem) at (0,   -3.8)
+    {Within-layer\\$S_{\ell,t-1},\,Z_{\ell,t-1}$};
 
-  \draw[larrow] (chunk)    -- (state);
-  \draw[larrow] (mem_prev) -- (state);
-  \draw[larrow] (budget)   -- (state);
-  \draw[darrow] (gctx.south) -- ++(0,-0.6) -| (state.north);
+  \node[block]  (state) at (9.6, -3.8)
+    {Causal state $s_{\ell,t}$\\
+     $[K_{\ell,t}
+       \parallel \mathrm{Proj}(S_{\ell,t-1})$\\
+     $\parallel \mathrm{Proj}(Z_{\ell,t-1})
+       \parallel \mathrm{Proj}(S_{\ell-1,T})
+       \parallel B_{\ell,t}]$};
 
-  % ---- ROW 2: Actor-Critic ----
-  \node[actor] (actor)  at (9,   -7.0)
+  \node[xmem]   (xmem) at (16.5,-3.8)
+    {Cross-layer context\\
+     $\mathrm{Proj}(S_{\ell-1,T})$\\
+     \textit{(zero at $\ell=1$)}};
+
+  \node[phase]  (budget) at (16.5, 0)
+    {Budget $B_{\ell,t}\in[0,1]$};
+
+  \draw[la] (chunk) -- (state);
+  \draw[la] (wmem)  -- (state);
+  \draw[xa] (xmem)  -- (state);
+  \draw[da] (budget.south) -- ++(0,-0.5) -| (state.north east);
+
+  %------------------------------------------------------------
+  % ROW 2 — Actor-Critic
+  %------------------------------------------------------------
+  \node[actor] (actor) at (9.6, -7.4)
     {PPO Actor-Critic $\pi_\theta$\\
-     $w_t\sim\mathrm{SquashedGaussian}(\mu_\theta,\sigma_\theta)$};
-  \node[phase] (fisher) at (3.0, -7.0)
+     $w_{\ell,t}\sim\mathrm{SquashedGaussian}(\mu_\theta,\sigma_\theta)$};
+
+  \node[phase] (fisher) at (3.0, -7.4)
     {Phase 1: FI init\\
-     $\mathcal{L}_\text{A}{=}\mathbb{E}[(w_\mu{-}\tilde{\mathcal{I}})^2]$};
+     $\mathcal{L}_\text{A}{=}
+      \mathbb{E}[(w_\mu{-}\tilde{\mathcal{I}}_{\ell,t})^2]$};
 
-  \draw[larrow] (state)  -- (actor);
-  \draw[darrow, <->] (fisher) --
-    node[annot, above]{warm-start} (actor);
+  \draw[la] (state)  -- (actor);
+  \draw[da,<->] (fisher) -- node[annot,above]{warm-start} (actor);
 
-  \node[annot, below=0.18cm of actor] (wannot) {$w_t\in(0,1)^C$};
+  \node[annot, below=0.15cm of actor] (wannot)
+    {$w_{\ell,t}\in(0,1)^C$};
 
-  % ---- ROW 3: gating split ----
-  \node[gate] (soft) at (6.5, -10.0)
-    {Soft Scale\\$\hat{K}_t = w_t\odot\phi(K_t)$};
-  \node[gate] (hard) at (11.5,-10.0)
-    {Hard Prune (infer.)\\$\mathbb{I}[w_t>\tau]$};
+  %------------------------------------------------------------
+  % ROW 3 — gating split
+  %------------------------------------------------------------
+  \node[gate] (soft) at (7.0, -10.8)
+    {Soft scale\\
+     $\hat{K}_{\ell,t}=w_{\ell,t}\odot\phi(K_{\ell,t})$};
 
-  \draw[larrow] (actor) -| (soft);
-  \draw[larrow] (actor) -| (hard);
+  \node[gate] (hard) at (12.4,-10.8)
+    {Hard prune \normalfont(infer.)\\
+     $\mathbb{I}[w_{\ell,t}>\tau]$};
 
-  % ---- ROW 4: dilution + active tokens ----
-  \node[gate]  (dilution) at (6.5, -13.0)
-    {State Dilution\\
-     $+\,\gamma(1{-}\bar{w}_t)\cdot S_{t-1}/(t{-}1)$};
-  \node[block] (active)   at (11.5,-13.0)
-    {Active tokens\\$C_\mathrm{active}\leq C$};
+  \draw[la] (actor) -| (soft);
+  \draw[la] (actor) -| (hard);
 
-  \draw[larrow] (soft) -- (dilution);
-  \draw[larrow] (hard) -- (active);
+  %------------------------------------------------------------
+  % ROW 4 — dilution + active tokens
+  %------------------------------------------------------------
+  \node[gate]  (dil)    at (7.0, -13.8)
+    {State dilution\\
+     $+\,\gamma(1{-}\bar{w}_{\ell,t})
+       \cdot S_{\ell,t-1}/(t{-}1)$};
 
-  % ---- ROW 5: updated memory ----
-  \node[memory] (mem_new) at (9, -16.0)
-    {Updated Memory\\$S_t,\,Z_t$};
+  \node[block] (active) at (12.4,-13.8)
+    {Active tokens\\
+     $C_\mathrm{active}\leq C$};
 
-  \draw[larrow] (dilution) |- (mem_new);
-  \draw[larrow] (active)   |- (mem_new);
+  \draw[la] (soft) -- (dil);
+  \draw[la] (hard) -- (active);
 
-  \draw[rarrow] (mem_prev.south) -- ++(0,-1.0)
-    -| node[annot, pos=0.18, below]{recurrent} (mem_new.west);
+  %------------------------------------------------------------
+  % ROW 5 — updated within-layer memory
+  %------------------------------------------------------------
+  \node[memory] (wmem2) at (9.6, -17.0)
+    {Updated memory\\$S_{\ell,t},\,Z_{\ell,t}$};
 
-  % budget update node
-  \node[phase] (budgetup) at (14.5,-16.0)
-    {$B_{t+1}=B_t-\tfrac{1}{N}\sum w_{i,t}$};
-  \draw[larrow] (mem_new) -- (budgetup);
+  \draw[la] (dil)    |- (wmem2);
+  \draw[la] (active) |- (wmem2);
+  \draw[ra] (wmem.south) -- ++(0,-0.9)
+    -| node[annot,pos=0.18,below]{within-layer recurrence} (wmem2.west);
 
-  % recurrence arrow back to chunk
-  \draw[rarrow, thick]
-    (budgetup.north) -- ++(0, 1.2)
-    -- ++(4.0, 0)
-    -- ++(0, 15.0)
-    -| node[annot, pos=0.10, above]{advance to chunk $t{+}1$} (chunk.north);
+  % budget decrement
+  \node[phase] (budup) at (16.5,-17.0)
+    {$B_{\ell,t+1}=B_{\ell,t}-\tfrac{1}{N}\sum w_{i,\ell,t}$};
+  \draw[la] (wmem2) -- (budup);
 
-  % ---- ROW 6: task head + reward ----
-  \node[head]   (taskhead) at (9, -19.0)
-    {Task Head\\(cls.\ / detection)};
-  \node[reward] (reward)   at (9, -21.5)
-    {$R = \mathrm{TaskMetric}$\\
-     $-\,\lambda\max(0,1{-}B_T)$};
+  %------------------------------------------------------------
+  % CHUNK LOOP — back to chunk node (t → t+1)
+  %------------------------------------------------------------
+  \draw[ra, thick]
+    (budup.north) -- ++(0, 0.9)
+    -- ++(3.2, 0)
+    -- ++(0, 17.9)
+    -| node[annot,pos=0.08,above]{next chunk $t{+}1$} (chunk.north);
 
-  \draw[larrow] (mem_new)  -- node[annot, right]{$t=T$} (taskhead);
-  \draw[larrow] (taskhead) -- (reward);
+  %------------------------------------------------------------
+  % LAYER TRANSITION — S_{ℓ,T} → cross-layer context next layer
+  %------------------------------------------------------------
+  \node[xmem] (layerout) at (0, -17.0)
+    {Layer output\\$S_{\ell,T},\,Z_{\ell,T}$};
 
-  \draw[darrow, bend right=38]
+  \draw[xa] (wmem2.west) -- node[annot,above]{$t=T$} (layerout.east);
+
+  \draw[xa, thick]
+    (layerout.north) -- ++(0, 0.9)
+    -- ++(-3.0, 0)
+    -- ++(0, 14.8)
+    -- ++(19.5, 0)
+    -| node[annot,pos=0.06,above]{cross-layer: $S_{\ell,T}\!\to\!S_{\ell,T}$ for layer $\ell{+}1$}
+       (xmem.north);
+
+  %------------------------------------------------------------
+  % ROW 6 — task head + reward (after ℓ=L)
+  %------------------------------------------------------------
+  \node[head]   (thead)  at (9.6, -20.5)
+    {Task head\\(cls.\ / detection)};
+  \node[reward] (reward) at (9.6, -23.2)
+    {$R=\mathrm{TaskMetric}
+       -\lambda\max(0,1{-}B_{L,T})$};
+
+  \draw[la] (wmem2)  -- node[annot,right]{$\ell=L,\;t=T$} (thead);
+  \draw[la] (thead)  -- (reward);
+
+  % PPO feedback arrow
+  \draw[da, bend right=35]
     (reward.west) to
-    node[annot, left]{PPO update (GAE)} (actor.west);
+    node[annot,left]{PPO update (GAE, $\hat{A}_{\ell,t}$)}
+    (actor.west);
 
-  % ============================================================
-  % Background phase shading
-  % ============================================================
+  %------------------------------------------------------------
+  % Background shading
+  %------------------------------------------------------------
   \begin{scope}[on background layer]
+
+    % Phase 1 (Fisher)
     \node[draw, dashed, rounded corners, fill=gray!3, draw=gray!30,
-          fit=(fisher)(actor)(wannot), inner sep=8pt] (p0box) {};
-    \node[annot, above right=2pt and 2pt of p0box.north west]
-      {\textbf{Phase 1}};
-
-    \node[draw, dashed, rounded corners, fill=red!2, draw=red!18,
-          fit=(actor)(wannot)(soft)(hard)(dilution)(active)%
-              (mem_new)(taskhead)(reward),
-          inner sep=8pt] (p1box) {};
+          fit=(fisher)(actor)(wannot), inner sep=8pt] (p1box) {};
     \node[annot, above right=2pt and 2pt of p1box.north west]
-      {\textbf{Phase 2}};
+      {\textbf{Phase 1} --- Fisher distillation};
 
+    % Phase 2 (PPO) — large box around the whole per-step processing
+    \node[draw, dashed, rounded corners, fill=red!2, draw=red!18,
+          fit=(actor)(wannot)(soft)(hard)(dil)(active)%
+              (wmem2)(thead)(reward),
+          inner sep=8pt] (p2box) {};
+    \node[annot, above right=2pt and 2pt of p2box.north west]
+      {\textbf{Phase 2} --- PPO fine-tuning};
+
+    % Inference-only annotation on hard prune
     \node[draw, dashed, rounded corners,
           fill=orange!4, draw=orange!30,
           fit=(hard)(active), inner sep=5pt] {};
-    \node[annot, above right=1pt and 1pt of hard.north west]
+    \node[annot, above=1pt of hard.north]
       {inference only};
+
+    % Cross-layer highlight
+    \node[draw, dashed, rounded corners,
+          fill=teal!3, draw=teal!25,
+          fit=(xmem)(layerout), inner sep=6pt] {};
+    \node[annot, below=1pt of layerout.south]
+      {layer-wise context};
+
   \end{scope}
 
   \end{tikzpicture}%
-  }% end resizebox
+  }
   \caption{%
-    Architecture overview. An input image is tokenised into $N$ patches and
-    processed in $T$ sequential chunks. At each step $t$, the PPO Actor-Critic
-    observes the causal state $s_t$ encoding local features, projections of
-    the recurrent memory $(S_{t-1}, Z_{t-1})$, and the remaining budget $B_t$
-    and emits per-token weights $w_t$. These soft-scale token contributions
-    during training; at inference, weights below threshold $\tau$ are
-    hard-pruned for exact FLOP reduction. State Dilution replenishes the memory
-    with the historical mean $S_{t-1}/(t{-}1)$ proportional to suppression
-    $(1-\bar{w}_t)$. After $T$ chunks, the final memory $(S_T, Z_T)$ feeds a
-    task head and a terminal reward drives PPO via GAE\@.
-    Phase 1 bootstraps the Actor from Fisher Information saliency targets before
-    Phase 2 end-to-end fine-tuning.%
+    Architecture of the proposed two-dimensional Actor-Critic routing framework.
+    Processing proceeds over two nested loops: an inner loop over spatial chunks
+    $t\in\{1,\dots,T\}$ within each layer, and an outer loop over transformer
+    layers $\ell\in\{1,\dots,L\}$.
+    At each step $(\ell,t)$, the PPO Actor-Critic observes a causal state
+    $s_{\ell,t}$ comprising local token features, projections of the
+    within-layer memory $(S_{\ell,t-1}, Z_{\ell,t-1})$, the \emph{completed}
+    memory from the previous layer $S_{\ell-1,T}$ (cross-layer context, teal),
+    and the remaining compute budget $B_{\ell,t}$.
+    Continuous weights $w_{\ell,t}$ gate the memory update via soft scaling
+    during training and hard token pruning at inference.
+    State Dilution prevents memory stagnation under aggressive pruning.
+    At $t=T$, the completed memory $S_{\ell,T}$ is passed as cross-layer
+    context to layer $\ell{+}1$.
+    After all $L{\times}T$ steps, the final memory $(S_{L,T}, Z_{L,T})$
+    feeds a task head and a terminal reward drives PPO via GAE\@.
+    Phase~1 bootstraps the Actor-Critic from Fisher Information saliency
+    targets before Phase~2 end-to-end fine-tuning.%
   }
   \label{fig:architecture}
 \end{figure*}
-
-\subsection{Chunkwise Formulation of Linear Attention}
-Standard linear attention leverages the associative property to reduce complexity to $\mathcal{O}(N)$. The output for the $i$-th query is typically computed using a global normalization term:
+%------------------------------------------------------------------
+\subsection{Chunkwise Linear Attention}
+%------------------------------------------------------------------
+Standard linear attention exploits the associativity of the kernel inner product to achieve $\mathcal{O}(N)$ complexity. For the $i$-th query:
 \begin{equation}
-    O_i = \frac{\phi(Q_i) \sum_{j=1}^N \phi(K_j)^\top V_j}{\phi(Q_i) \sum_{j=1}^N \phi(K_j)^\top}
+    O_i = \frac{\phi(Q_i)\!\sum_{j=1}^{N}\phi(K_j)^\top V_j}
+               {\phi(Q_i)\!\sum_{j=1}^{N}\phi(K_j)^\top}
 \end{equation}
 
-To enable sequential importance assignment, we reformulate this into a causal, chunkwise process. The input sequence of $N$ tokens is partitioned into $T$ non-overlapping sequential chunks of size $C$. At each step $t \in \{1, \dots, T\}$, the backbone processes the current chunk into local Queries ($Q_t$), Keys ($K_t$), and Values ($V_t$).
-
-Rather than computing a full sequence matrix, we maintain two recurrent memory representations to capture global context. The numerator state $S_t \in \mathbb{R}^{D \times D}$ accumulates the cross-covariance of keys and values, while the denominator state $Z_t \in \mathbb{R}^{D \times 1}$ tracks the normalization factor:
+We reformulate this as a causal chunkwise recurrence. Within layer $\ell$, the sequence is partitioned into $T$ chunks of size $C$. Two memory accumulators are maintained:
 \begin{equation}
-    S_t = S_{t-1} + \phi(K_t)^\top V_t
+    S_{\ell,t} = S_{\ell,t-1} + \phi(K_{\ell,t})^\top V_{\ell,t}, \qquad
+    Z_{\ell,t} = Z_{\ell,t-1} + \sum_{i \in t}\phi(K_{\ell,i,t})^\top
 \end{equation}
+with $S_{\ell,0} = \mathbf{0}$ and $Z_{\ell,0} = \mathbf{0}$ at the start of each layer. The attention output for chunk $t$ at layer $\ell$ is:
 \begin{equation}
-    Z_t = Z_{t-1} + \sum_{i \in \text{chunk } t} \phi(K_{i, t})^\top
-\end{equation}
-
-The attention output for the current chunk $t$ is then computed as:
-\begin{equation}
-    O_t = \frac{\phi(Q_t) S_t}{\phi(Q_t) Z_t}
+    O_{\ell,t} = \frac{\phi(Q_{\ell,t})\,S_{\ell,t}}{\phi(Q_{\ell,t})\,Z_{\ell,t}}
 \end{equation}
 
+This double-indexed recurrence creates a two-dimensional trajectory $(\ell, t)$ that the Actor-Critic acts upon, enabling routing decisions that are sensitive to both spatial position within a layer and depth in the network.
+
+%------------------------------------------------------------------
 \subsection{Markov Decision Process Formulation}
-
-By reformulating linear attention into a recurrent, chunkwise execution, we isolate the processing of each image segment into a discrete-time Markov Decision Process (MDP). This structure allows a routing agent to sequentially determine the importance of tokens based on local information, accumulated global memory, and remaining computational resources.
+%------------------------------------------------------------------
+Each step $(\ell, t)$ is a node in a discrete-time MDP. The agent processes all $T$ chunks of layer $\ell$ before advancing to layer $\ell{+}1$, at which point the completed memory $S_{\ell,T}$ becomes available as cross-layer context.
 
 \subsubsection{State Space ($\mathcal{S}$)}
-At each chunk step $t$, the agent observes a causal state $s_t$ defined as:
+At step $(\ell, t)$, the agent observes:
 \begin{equation}
-s_t = \left[ K_t \parallel \mathrm{Proj}(S_{t-1}) \parallel \mathrm{Proj}(Z_{t-1}) \parallel B_t \right]
+s_{\ell,t} = \Bigl[
+  K_{\ell,t}
+  \;\|\;
+  \mathrm{Proj}(S_{\ell,t-1})
+  \;\|\;
+  \mathrm{Proj}(Z_{\ell,t-1})
+  \;\|\;
+  \mathrm{Proj}(S_{\ell-1,T})
+  \;\|\;
+  B_{\ell,t}
+\Bigr]
 \end{equation}
 
-The components are:
 \begin{itemize}
-    \item \textbf{Local Features ($K_t \in \mathbb{R}^{C \times D}$):} Visual features of the current chunk.
-    
-    \item \textbf{Memory Projection ($\mathrm{Proj}(S_{t-1}) \in \mathbb{R}^{D}$):} A learned projection of the accumulated memory matrix $S_{t-1} \in \mathbb{R}^{D \times D}$.
-    
-    \item \textbf{Normalization Projection ($\mathrm{Proj}(Z_{t-1}) \in \mathbb{R}^{D}$):} A projection of the normalization accumulator $Z_{t-1}$, encoding the effective mass of stored tokens.
-    
-    \item \textbf{Dynamic Budget ($B_t \in [0,1]$):} Remaining computational budget.
+  \item \textbf{Local features} $K_{\ell,t} \in \mathbb{R}^{C \times D}$: visual features of the current chunk at the current layer.
+  \item \textbf{Within-layer memory} $\mathrm{Proj}(S_{\ell,t-1}) \in \mathbb{R}^{D}$: a learned linear projection of the memory accumulated so far in layer $\ell$, encoding what this layer has already seen.
+  \item \textbf{Normalization projection} $\mathrm{Proj}(Z_{\ell,t-1}) \in \mathbb{R}^{D}$: projection of the normalization accumulator, encoding the effective token mass retained so far.
+  \item \textbf{Cross-layer context} $\mathrm{Proj}(S_{\ell-1,T}) \in \mathbb{R}^{D}$: a learned projection of the \emph{completed} memory from the previous layer, providing a summary of which tokens the network considered globally important at depth $\ell{-}1$. For $\ell=1$ this term is zero.
+  \item \textbf{Dynamic budget} $B_{\ell,t} \in [0,1]$: remaining compute budget, decremented by the weights emitted at each step.
 \end{itemize}
+
+The inclusion of $\mathrm{Proj}(S_{\ell-1,T})$ is the key addition over single-axis routing: the agent at layer $\ell$ can reinforce attention to tokens that were salient in layer $\ell{-}1$, or deliberately shift focus to complementary structure, without any explicit depth index.
 
 \subsubsection{Action Space ($\mathcal{A}$)}
-For each chunk of size $C$, the Actor $\pi_\theta$ outputs:
+For each chunk of size $C$, the Actor outputs independent per-token weights:
 \begin{equation}
-a_t = \{ w_{1,t}, w_{2,t}, \dots, w_{C,t} \}, \quad w_{i,t} \in (0,1)
+a_{\ell,t} = \{w_{1,\ell,t},\, w_{2,\ell,t},\, \dots,\, w_{C,\ell,t}\},
+\quad w_{i,\ell,t} \in (0,1)
 \end{equation}
+\begin{equation}
+a_{\ell,t} \sim \mathrm{SquashedGaussian}\!\left(\mu_\theta(s_{\ell,t}),\,\sigma_\theta(s_{\ell,t})\right)
+\end{equation}
+Weights are independent and do not sum to one, allowing the agent to suppress an entire chunk by assigning near-zero weights to all its tokens.
+
 \subsubsection{Transition Dynamics}
-The transition to $s_{t+1}$ is governed by deterministic updates of the memory and normalization accumulators.
-
-The memory update is:
+The within-layer memory update gates token contributions by their weights:
 \begin{equation}
-S_t = S_{t-1} + \left( (w_t \odot \phi(K_t))^\top V_t \right)
+S_{\ell,t} = S_{\ell,t-1}
+  + \left(w_{\ell,t} \odot \phi(K_{\ell,t})\right)^\top V_{\ell,t}
+  + \gamma \cdot (1-\bar{w}_{\ell,t}) \cdot \frac{S_{\ell,t-1}}{t-1}
 \end{equation}
-
-The normalization term evolves as:
+where the State Dilution term (zero for $t=1$) replenishes the memory with its historical mean scaled by the suppression degree $(1-\bar{w}_{\ell,t})$, preventing stagnation when the agent prunes aggressively. The normalization accumulator evolves as:
 \begin{equation}
-Z_t = Z_{t-1} + \sum_{i=1}^{C} w_{i,t} \, \phi(K_{i,t})^\top ,
+Z_{\ell,t} = Z_{\ell,t-1} + \sum_{i=1}^{C} w_{i,\ell,t}\,\phi(K_{\ell,i,t})^\top
 \end{equation}
-where $\phi(\cdot)$ is the feature map associated with linear attention, and $\odot$ denotes element-wise scaling of token features by their corresponding weights.
-
-The budget follows:
+where $\phi(\cdot)$ is the linear attention feature map and $\odot$ denotes element-wise scaling. The budget is decremented as:
 \begin{equation}
-B_{t+1} = B_t - \frac{1}{N} \sum_{i=1}^{C} w_{i,t}
+B_{\ell,t+1} = B_{\ell,t} - \frac{1}{N}\sum_{i=1}^{C} w_{i,\ell,t}
 \end{equation}
+At the end of layer $\ell$ (i.e.\ $t=T$), the completed state $S_{\ell,T}$ is passed as cross-layer context to the next layer, and the within-layer memory is reset: $S_{\ell+1,0} = \mathbf{0}$.
 
 \subsubsection{Reward Function ($\mathcal{R}$)}
-A terminal reward $R$ is provided at $t = T$:
+A single terminal reward is provided after all $L$ layers and $T$ chunks have been processed:
 \begin{equation}
-R = \mathrm{TaskMetric} - \lambda_{\text{penalty}} \cdot \max(0, 1 - B_T)
+R = \mathrm{TaskMetric} - \lambda_{\text{penalty}} \cdot \max(0,\, 1 - B_{L,T})
 \end{equation}
+where \textbf{TaskMetric} is the downstream performance measure (e.g.\ mAP or top-1 accuracy) and the penalty term discourages exceeding the allocated token budget.
 
-where:
-\begin{itemize}
-    \item \textbf{TaskMetric:} Task-specific performance (e.g., mAP or accuracy).
-    \item \textbf{Budget Penalty:} Penalizes exceeding the allocated token budget.
-\end{itemize}
-
-This formulation encourages the agent to preserve informative tokens while respecting computational constraints.
-
-\subsection{Squashed Gaussian Actor-Critic Network}
-To provide the flexibility to down-weight or entirely omit uninformative chunks, we model the routing policy $\pi_\theta(a_t \mid s_t)$ as a Squashed Gaussian distribution. This independent weighting avoids the mathematical instability of discrete gates and the competitive constraints of a global Softmax operation, allowing the network to allocate exact importance independent of the surrounding context. 
-
-The Actor network computes the parameters for an unbounded Normal distribution. To ensure the standard deviation remains positive and numerically stable, it is passed through a Softplus activation with a small $\epsilon$ floor:
-$$ \mu_\theta = \text{MLP}_\mu(s_t), \quad \sigma_\theta = \text{Softplus}(\text{MLP}_\sigma(s_t)) + \epsilon $$
-
-During stochastic training, actions are sampled using the reparameterization trick, allowing gradients to flow back through the stochastic node. The unbounded sample $x$ is then squashed via a hyperbolic tangent and shifted to the valid continuous weighting space of $(0, 1)$:
-$$ w_t = \frac{\tanh(x) + 1}{2}, \quad x \sim \mathcal{N}(\mu_\theta, \sigma_\theta^2) $$
-
-By decoupling the weights from a global sum, the Actor can assign near-zero weights to every token in a redundant chunk, effectively "muting" its contribution to the global memory $S_t$. However, applying the non-linear Tanh transformation changes the probability density of the sampled action. To maintain mathematical integrity for Proximal Policy Optimization (PPO), the log-probability of the action must be corrected using the Jacobian trace of the Tanh transformation:
-$$ \log \pi(w_t) = \log p(x) - \sum \log(1 - \tanh^2(x) + \epsilon) $$
-
-Concurrently, a Value network (Critic) $V_\phi(s_t)$ evaluates the causal state to estimate the expected episodic return, which serves as a baseline to stabilize the subsequent RL updates.
-
-\subsection{Pretraining: Scale-Aligned Information Distillation}
-Initializing an RL agent from scratch in a massive parameter space often leads to representation collapse, as the agent initially acts randomly and destroys the transformer's memory state. To circumvent this, Phase 1 initializes the Actor using empirical Fisher Information ($\mathcal{I}_i$) as a saliency oracle. 
-
-After warming up the backbone on a dense classification task, we compute the squared gradients of the cross-entropy loss with respect to the token features to approximate their Fisher Information. These scores reflect the true informational utility of each token. To prevent scale shift during the transfer to the RL phase, we apply spatial smoothing and normalize these scores to a strict $\tilde{\mathcal{I}}_i \in [0, 1]$ range.
-
-The Actor and Critic are then trained via supervised learning. The Actor minimizes the Mean Squared Error between its deterministic mean prediction $w_{\mu}$ and the Fisher utility, while the Critic learns to predict the total saliency of the chunk:
-$$ \mathcal{L}_{\text{Actor}} = \mathbb{E} \left[ \left( w_{\mu}(s_t) - \tilde{\mathcal{I}}_t \right)^2 \right] $$
-$$ \mathcal{L}_{\text{Critic}} = \mathbb{E} \left[ \left( V_\phi(s_t) - \sum_{i \in t} \tilde{\mathcal{I}}_i \right)^2 \right] $$
-
-\subsection{Finetuning: Task-Specific Reward Optimization}
-In Phase 2, the model is transitioned to the downstream task and optimized via PPO. The environment dynamically enforces a decreasing budget $B_t$, forcing the Actor to plan its token allocation temporally. 
-Aggressive down-weighting can cause the recurrent memory to stagnate, leading to 
-catastrophic forgetting of accumulated visual context. To mitigate this, the memory is augmented at each step by a fraction of its own historical average, scaled by the degree of suppression $(1 - \bar{w}_t)$:
+%------------------------------------------------------------------
+\subsection{Squashed Gaussian Actor-Critic}
+%------------------------------------------------------------------
+We model the routing policy $\pi_\theta(a_{\ell,t} \mid s_{\ell,t})$ as a Squashed Gaussian, avoiding the instability of discrete gates and the competitive coupling of a global Softmax. The Actor outputs the parameters of an unbounded Normal distribution:
 \begin{equation}
-    S_t = S_{t-1} + \left(w_t \odot \phi(K_t)\right)^\top V_t 
-    + \gamma \cdot (1 - \bar{w}_t) \cdot \frac{S_{t-1}}{t-1}
+\mu_\theta = \mathrm{MLP}_\mu(s_{\ell,t}), \qquad
+\sigma_\theta = \mathrm{Softplus}\!\left(\mathrm{MLP}_\sigma(s_{\ell,t})\right) + \epsilon
 \end{equation}
-where the dilution term is defined as zero for $t=1$. When the agent fully suppresses 
-a chunk $({\bar{w}_t \to 0})$, the memory is topped up with the mean KV contribution 
-accumulated so far, preventing stagnation. When all tokens are retained 
-$(\bar{w}_t \to 1)$, the term vanishes and the update reduces to standard linear 
-attention.
+Actions are sampled via the reparameterization trick and squashed to $(0,1)$:
+\begin{equation}
+w_{\ell,t} = \frac{\tanh(x)+1}{2}, \qquad x \sim \mathcal{N}(\mu_\theta, \sigma_\theta^2)
+\end{equation}
+The Tanh transformation changes the probability density; the log-probability is corrected by the Jacobian of the transformation:
+\begin{equation}
+\log\pi(w_{\ell,t}) = \log p(x) - \sum_i \log\!\left(1 - \tanh^2(x_i) + \epsilon\right)
+\end{equation}
+A Value network (Critic) $V_\phi(s_{\ell,t})$ estimates the expected episodic return from state $s_{\ell,t}$, providing a baseline for PPO updates.
 
-Using Generalized Advantage Estimation ($\hat{A}_t$) derived from the Critic's value predictions, the Actor is updated via the clipped PPO surrogate objective. To guarantee sufficient exploration of the continuous weight space and prevent premature convergence, we inject an entropy bonus:
+%------------------------------------------------------------------
+\subsection{Phase 1: Scale-Aligned Fisher Distillation}
+%------------------------------------------------------------------
+Applying RL to a randomly initialised policy in a high-dimensional visual state space leads to representation collapse: random weights destroy the recurrent memory before any useful gradient signal propagates. Phase~1 circumvents this by supervising the Actor and Critic from an empirical Fisher Information oracle.
+
+After warming up the backbone on a dense classification task, we compute the squared gradient of the cross-entropy loss with respect to each token's features as a proxy for its informational utility $\mathcal{I}_{i}$. Spatial smoothing is applied to preserve object boundaries, and scores are min-max normalised to a strict $\tilde{\mathcal{I}}_{i} \in [0,1]$ range to prevent value-scale mismatch during the subsequent RL phase.
+
+The Actor and Critic are then trained by supervised regression:
+\begin{equation}
+\mathcal{L}_{\text{Actor}} = \mathbb{E}\!\left[\left(w_\mu(s_{\ell,t}) - \tilde{\mathcal{I}}_{\ell,t}\right)^2\right]
+\end{equation}
+\begin{equation}
+\mathcal{L}_{\text{Critic}} = \mathbb{E}\!\left[\left(V_\phi(s_{\ell,t}) - \sum_{i \in t}\tilde{\mathcal{I}}_{\ell,i}\right)^2\right]
+\end{equation}
+This initialises the Actor to approximate gradient-based saliency and the Critic to predict chunk-level utility, providing a stable warm start for Phase~2.
+
+%------------------------------------------------------------------
+\subsection{Phase 2: Task-Specific PPO Fine-tuning}
+%------------------------------------------------------------------
+In Phase~2, the full system is transferred to the downstream task and optimised end-to-end. The two-dimensional MDP trajectory $\{(\ell, t)\}_{\ell=1,t=1}^{L,T}$ is rolled out per image; GAE computes advantages $\hat{A}_{\ell,t}$ from the Critic's value estimates. The Actor is updated via the clipped PPO surrogate with an entropy bonus over the true squashed distribution:
 \begin{equation}
 \begin{split}
-\mathcal{L}_{\mathrm{PPO}} = &-\mathbb{E}\!\left[\min\!\left(r_t(\theta)\hat{A}_t,\;
-    \mathrm{clip}(r_t(\theta),1\pm\epsilon)\hat{A}_t\right)\right] \\
-&- \lambda_{\mathrm{ent}}\, H(\pi_\theta)
+\mathcal{L}_{\mathrm{PPO}} =\; &{-}\mathbb{E}\!\left[
+  \min\!\left(r_t(\theta)\hat{A}_{\ell,t},\;
+  \mathrm{clip}(r_t(\theta),1\pm\epsilon)\hat{A}_{\ell,t}\right)\right] \\
+&- \lambda_{\mathrm{ent}}\,H(\pi_\theta)
 \end{split}
 \end{equation}
-where
-
+where $H(\pi_\theta)$ is the entropy of the squashed Gaussian policy:
 \begin{equation}
-H(\pi_\theta) = \frac{1}{2}\log(2\pi e\,\sigma_\theta^2) 
-+ \mathbb{E}\!\left[\sum_i \log(1 - \tanh^2(x_i) + \epsilon)\right]
+H(\pi_\theta) = \tfrac{1}{2}\log(2\pi e\,\sigma_\theta^2)
++ \mathbb{E}\!\left[\sum_i \log\!\left(1 - \tanh^2(x_i) + \epsilon\right)\right]
 \end{equation}
-is the entropy of the squashed Gaussian policy.
+Using the true squashed entropy rather than the pre-squash Gaussian entropy prevents the degenerate incentive of pushing weights toward the saturation boundaries of the Tanh nonlinearity.
 
-During inference, stochastic sampling is disabled. The Actor deterministically outputs a continuous weight $w_{\text{infer}}$. A hard threshold $\tau$ enables physical token purging, stripping uninformative tokens from the GPU memory buffer to yield exact FLOP reductions. Crucially, surviving tokens retain their continuous scaling factors $w_{\text{infer}}$ in the linear attention update, bypassing the quantization shock typically associated with discrete gating mechanisms.
+During inference, stochastic sampling is disabled. The Actor outputs deterministic weights; tokens with $w_{\ell,t} \leq \tau$ are physically purged from the GPU memory buffer via a \texttt{nonzero()} packing operation, yielding exact FLOP reductions. Surviving tokens retain their continuous scaling factors in the linear attention update, bypassing the quantisation shock of discrete binary gates.
