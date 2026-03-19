@@ -10,22 +10,23 @@ Transformer \cite{vaswani2017attention} model is initially created for NLP tasks
 Linear Attention \cite{shen2021efficient} fixes the quadratic complexity of softmax attention by using kernel functions to approximate the \(Sim()\) operator which reduce the complexity to linear.
 Given an input sequence of $N$ tokens, standard self-attention computes
 
-\[
+\begin{equation}
   A = \text{softmax}(\frac{QK^T}{\sqrt{d}}) V
-\]
+\end{equation}
+\
 where $Q,K,V \in \mathbb{R}^{N \times d}$ are the query, key, and value matrices and $d$ is the feature dimension.
 
 To reduce the complexity of softmax attention, linear attention replaces softmax operation with a feature map $\phi(\cdot)$
 
-\[
+\begin{equation}
   A = \phi(Q)\phi(K)^T V
-\]
+\end{equation}
 where $\phi(\cdot)$ is a kernel feature mapping applied element-wise.
 Due to matrix rank constraints,
 
-\[
+\begin{equation}
   \text{rank}(A) \le d.
-\]
+\end{equation}
 
 When the number of tokens $N$ is significantly larger than $d$, the attention mechanism must compress the interactions among many tokens into a limited representation. This compression can reduce the model's ability to capture fine-grained relationships among tokens, especially in high-resolution vision tasks. Thus its performance is still behind softmax. Many works try to tackle this issue \cite{cai2023efficientvit,han2023flatten,han2024demystify,katharopoulos2020transformers,lu2024softmax,shen2021efficient}.
 FLattenTransformer \cite{han2023flatten} introduces a focused function to enhance the ability of linear attention to concentrate on relevant information, while MLLA \cite{han2024demystify} establishes a link between linear attention and the Mamba model \cite{gu2024mamba}.
