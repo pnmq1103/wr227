@@ -13,7 +13,7 @@
 - [x] [PA1](https://docs.google.com/document/d/1EMJ5UtmZ4s529wdfB6jzrk_XtRUov0Cv9JmKBHgcT_I/): Topic Proposal
 - [x] PA2: Introduction, Related Work
 - [x] PA3: Method
-- [ ] PA4: Experiment and Results
+- [x] PA4: Experiment and Results
 - [ ] PA5: Conclusion and Abstract
 - [ ] In-class Presentation
 
@@ -28,7 +28,7 @@
 - [x] Implement Transformer architecture
 - [x] Vision Transformer
 - [x] Format: 2 columns
-- [ ] Refine introduction section
+- [x] Refine introduction section
 - [ ] Revise RL method: 2 states keep and prune
 - [ ] Implement other standard token pruning methods
 - [ ] Preprocess and analyze another dataset to avoid overfitting
