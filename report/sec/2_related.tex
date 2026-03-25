@@ -11,7 +11,7 @@ Linear Attention \cite{shen2021efficient} reduces the quadratic complexity of so
 Given an input sequence of $N$ tokens, standard self-attention computes
 
 \begin{equation}
-  A = \text{softmax}(\frac{QK^T}{\sqrt{d}}) V
+  A = \text{softmax} \left( \frac{QK^T}{\sqrt{d}} \right) V
   \label{eq:softmax}
 \end{equation}
 where $Q,K,V \in \mathbb{R}^{N \times d}$ are the query, key, and value matrices and $d$ is the feature dimension.
