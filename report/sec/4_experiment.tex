@@ -7,7 +7,7 @@
 
 Our evaluation includes two primary CV tasks: \textbf{image classification} and \textbf{object detection}. We focus on measuring the trade-off between model accuracy and computational efficiency (both training and inference) while conducting ablation studies to isolate the impact of each architectural component.
 
-\subsubsection{Task Specifications}
+\subsection{Task Specifications}
 
 \paragraph{Image Classification}
 We use the \textbf{ImageNet-100} dataset, a standard benchmark containing over 100 thousand images across 200 categories. Performance is measured using \textbf{Top-1 Accuracy}, which denotes the percentage of instances where the model's highest-probability prediction matches the ground-truth label.
@@ -19,12 +19,10 @@ For localization tasks, we use \textbf{COCO} 2017 which is widely recognized for
 The framework is implemented in \textbf{Python} using \textbf{PyTorch}. All experiments, including training and inference profiling, are conducted on a local computer with a single NVIDIA RTX 5060Ti 16GB.
 
 \subsection{Results}
-
 \begin{itemize}
-  \item object detection: RALA, Ours, RMT-T
-  \item image classification: RALA, Ours, MLLA-T
+  \item object detection baselines: RALA, Ours, RMT-T.
+  \item image classification baselines: RALA, Ours, MLLA-T.
   \item inference speed
-  \item ablation study: softmax, linear, non RL
 \end{itemize}
 
 % \subsection{Datasets}
@@ -154,7 +152,17 @@ The framework is implemented in \textbf{Python} using \textbf{PyTorch}. All expe
 \end{table}
 
 \subsection{Ablation Study}
-Need to conduct ablation study.
-
+\subsubsection{Other gating mechanism}
+Discuss the result of other gating mechanism compare to RL.
+We hypothesize that the RL gating will be superior to the existing methods due to 
+its ability to gather global information. On the other hand, the 
+existing methods may have better speed, but it should be negligible.
+\subsubsection{Without budget concern}
+Discuss the result fo RL gating without budget concern. We hypothesize that the RL will be
+lazy to assign a low weight for tokens, since it only needs to retain the performance. 
+\subsubsection{Without Fisher Initialization}
+Discuss the training time, result without Fisher Initialzatio for Actor-Critic network. We propose 
+that training the Actor-Critic network will be difficult due to unstablized training, and the high variance
+of RL. 
 % explain why it works or not?
 % what's next?
