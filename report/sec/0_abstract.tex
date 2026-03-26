@@ -1,6 +1,6 @@
 \begin{abstract}
-  Vision Transformer, Linear Attention, Reinforcement Learning
-  % The ABSTRACT is to be in fully justified italicized text, at the top of the left-hand column, below the author and affiliation information.
+  
+While recently, Vision Transformers (ViTs) achieve state-of-the-art performance, their quadratic self-attention mechanism causes immense computational costs. Recent linear attention mechanisms mitigate the quadratic bottleneck but still redundantly process uninformative background tokens, wasting computational budget and limiting the model accuracy. In this paper, we propose a Multi-Agent Reinforcement Learning (MARL) gating framework to assign the importance of each token. Each visual token acts as an autonomous agent, utilizing a shared Actor-Critic policy to output continuous survival weights, gating information flow into the recurrent memory.
   % Use the word ``Abstract'' as the title, in 12-point Times, boldface type, centered relative to the column, initially capitalized.
   % The abstract is to be in 10-point, single-spaced type.
   % Leave two blank lines after the Abstract, then begin the main text.

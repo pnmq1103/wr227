@@ -13,15 +13,15 @@ in object detection, image classification, and semantic segmentation.
 %% problem
 However, softmax attention - the core mechanism of Transformer, has a high computational complexity of \( O(n^2) \).
 % background
-To address the issue, many works attempted to group vision tokens \textbf{NEED CITATIONS}. Although this method reduces the complexity,
+To address the issue, many works attempted to group vision tokens. Although this method reduces the complexity,
 Transformer loses its ability to perceive information globally.
 Other works replace softmax attention with \textbf{linear attention} which help reduce the quadratic complexity.
 However, linear attention inability to model complex information yields unsatisfactory results due to its low-rank nature and magnitude negligence.
 % transition
-Many works \textbf{NEED CITATIONS} have attempted to improve linear attention by tackling its low-rank nature \cite{fan2025breaking}.
+Many works have attempted to improve linear attention by tackling its low-rank nature \cite{fan2025breaking}.
 Linear attention replaces softmax with kernal feature maps which causes the loss of sharpness.
 Therefore it can not be as selective as softmax attention which can place most of its attention weights on a few relevant tokens.
-To address this, we apply a Reinforcement Learning (RL) \textbf{weighting} mechanism for each token, and extend to \textbf{token pruning} \cite{rao2021dynamicvit,lu2025reinforcement} which help refine the input for linear attention.
+To address this, we apply a Reinforcement Learning (RL) \textbf{gating} mechanism for each token, and extend to \textbf{token pruning} \cite{rao2021dynamicvit,lu2025reinforcement} which help refine the input for linear attention.
 With this approach, we aim to speed up the training and inference time of the model without sacrificing its performance.
 % details
 

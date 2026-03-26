@@ -1,0 +1,28 @@
+Loading model from 'vit_stage_3_final.pth' for RL PRUNING (Soft Gating)...
+--- Running Evaluation: RL PRUNING (Soft Gating) ---
+                                                        
+=====================================================
+🎯 EVALUATION RESULTS: RL PRUNING (Soft Gating)
+=====================================================
+-> Test Accuracy:        48.62%
+-> Test Cross-Entropy:   1.9664
+-> Average Tokens Kept:  39.9%
+-----------------------------------------------------
+-> Total Time:           24.81 seconds
+-> Throughput:           201.54 images/sec
+-> FLOPs Saved (Est.):   60.1% reduction in linear attention!
+=====================================================
+
+Loading model from 'vit_stage_3_final.pth' for DENSE ABLATION (100% Tokens)...
+--- Running Evaluation: DENSE ABLATION (100% Tokens) ---
+                                                        
+=====================================================
+🎯 EVALUATION RESULTS: DENSE ABLATION (100% Tokens)
+=====================================================
+-> Test Accuracy:        46.30%
+-> Test Cross-Entropy:   2.0634
+-> Average Tokens Kept:  100.0%
+-----------------------------------------------------
+-> Total Time:           24.67 seconds
+-> Throughput:           202.70 images/sec
+=====================================================

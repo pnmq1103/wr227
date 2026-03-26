@@ -1,0 +1,8 @@
+\section{Threats To Validity}
+In this study, several threats to validity  must be acknowledged.
+
+A primary assumption of our Phase 1 pretraining is that empirical Fisher Information serves as an accurate proxy for ground-truth visual saliency. Gradients from a cross-entropy loss may not fully capture complex, multi-token spatial dependencies. Furthermore, token pruning can result in a worse accuracy, especially with the structure of chunkwise linear attention.
+
+The inherent variance of Proximal Policy Optimization poses an internal threat. RL algorithms are notoriously sensitive to hyperparameter configurations, specifically the sparsity penalty coefficient ($\lambda$) and the entropy bonus.
+
+Current evaluation is primarily constrained to image classification tasks. It remains to be empirically validated how well this localized, independent agent formulation generalizes to dense prediction tasks, such as high-resolution object detection or semantic segmentation, where maintaining precise background context is often more critical than in image-level classification.
