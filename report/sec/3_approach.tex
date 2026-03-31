@@ -1,21 +1,21 @@
 \section{Method}
-  We adopt the method from RALA\cite{fan2025breaking} for solving the low rank problem, and replace the gating component with a multi-agent RL gating framework with every token treated as an agent sharing a continuous, stochastic Actor-Critic module. We aim to add a budget constraint, and layer wise information into the gating to improve the linear attention speed and performance. The gating score can be used to prune the token when inferencing. 
+We adopt the method from RALA \cite{fan2025breaking} for solving the low-rank problem, and replace the gating component with a multi-agent RL gating framework where every token is treated as an agent sharing a continuous, stochastic Actor-Critic module. We aim to add a budget constraint, and layer wise information into the gating to improve the linear attention speed and performance. The gating score can be used to prune the token when inference.
 
 \subsection{Architecture Overview}
-An input image is tokenized into $N$ patch embeddings and partitioned into $T$ sequential chunks of size $C$. A linear-attention ViT backbone processes each chunk, projects it into local queries $Q_t$, keys $K_t$, and values $V_t$ and maintain a recurrent memory $(S_t, Z_t)$ in place of a full attention matrix. 
+An input image is tokenized into $N$ patch embeddings and partitioned into $T$ sequential chunks of size $C$. A linear-attention ViT backbone processes each chunk, projects it into local queries $Q_t$, keys $K_t$, and values $V_t$ and maintain a recurrent memory $(S_t, Z_t)$ in place of a full attention matrix.
 The shared Actor-Critic module evaluates the local token features in parallel. At each layer $l$, which represents a discrete time step in the Markov Decision Process (MDP), every agent $n \in \{1,\dots,N\}$ produces a scalar gating weight $w_n \in (0,1)$. For a specific chunk $t$, the agents collectively produce a weight vector:
 \begin{equation}
-    \mathbf{w}_t = [w_{t,1}, w_{t,2}, \dots, w_{t,C}]^\top \in (0,1)^C
+  \mathbf{w}_t = [w_{t,1}, w_{t,2}, \dots, w_{t,C}]^\top \in (0,1)^C
 \end{equation}
 
 To perform the row-wise memory update, we compute a chunk-level importance factor $\bar{w}_t$ by averaging the actions of the $C$ agents within that specific chunk:
 \begin{equation}
-    \bar{w}_t = \frac{1}{C}\sum_{c=1}^C w_{t,c}
+  \bar{w}_t = \frac{1}{C}\sum_{c=1}^C w_{t,c}
 \end{equation}
 
 These weights are then utilized to gate both the parallel memory update and the recurrent decay:
 \begin{equation}
-    S_t = (1 - \gamma(1 - \bar{w}_t)) S_{t-1} + (\mathbf{w}_t \odot \phi(K_t))^\top V_t
+  S_t = (1 - \gamma(1 - \bar{w}_t)) S_{t-1} + (\mathbf{w}_t \odot \phi(K_t))^\top V_t
 \end{equation}
 
 After all $T$ chunks are processed via the sequential recurrence, the final state $(S_T, Z_T)$ is consumed by the task head to produce the terminal reward $R$, which is used to guide the cooperative policy optimization.
@@ -23,22 +23,22 @@ After all $T$ chunks are processed via the sequential recurrence, the final stat
 Training follows a two-phase curriculum. \textbf{Phase 1} pretrain the ViT on the classification task to obtain a visual backbone. Then the RL agents is supervised trained with the Fisher Information of the pretrained ViT, avoiding the policy collapse that arises when RL is applied cold to a high-dimensional visual state. \textbf{Phase 2} fine-tunes the full system end-to-end on the downstream task via Proximal Policy Optimization (PPO) with Generalized Advantage Estimation. During inference, stochastic sampling is disabled, and the Actor produces deterministic continuous weights with hard pruning per chunk.
 
 \begin{figure*}[ht]
-    \centering
-    \begin{tikzpicture}[
-        >=stealth,
-        node distance=1.5cm and 2cm,
-        font=\sffamily\small,
-        % Styles
-        box/.style={rectangle, draw, rounded corners, minimum height=1cm, minimum width=2.5cm, align=center, fill=blue!5},
-        agent/.style={rectangle, draw, rounded corners, minimum height=1cm, minimum width=2.5cm, align=center, fill=red!10, dashed},
-        math/.style={circle, draw, minimum size=0.8cm, inner sep=0pt, fill=yellow!10},
-        arrow/.style={->, thick},
-        label/.style={above, font=\footnotesize}
+  \centering
+  \begin{tikzpicture}[
+      >=stealth,
+      node distance=1.5cm and 2cm,
+      font=\sffamily\small,
+      % Styles
+      box/.style={rectangle, draw, rounded corners, minimum height=1cm, minimum width=2.5cm, align=center, fill=blue!5},
+      agent/.style={rectangle, draw, rounded corners, minimum height=1cm, minimum width=2.5cm, align=center, fill=red!10, dashed},
+      math/.style={circle, draw, minimum size=0.8cm, inner sep=0pt, fill=yellow!10},
+      arrow/.style={->, thick},
+      label/.style={above, font=\footnotesize}
     ]
 
     % --- 1. Inputs ---
     \node (input) {Input Features $\mathbf{x}_l$};
-    
+
     % --- 2. Swarm MARL (Top Branch) ---
     \node[agent, above right=0.5cm and 2cm of input] (actor) {Shared Actor-Critic \\ (Swarm of $N$ Agents)};
     \node[right=1cm of actor] (weights) {Action Vector $\mathbf{w}_l$};
@@ -48,7 +48,7 @@ Training follows a two-phase curriculum. \textbf{Phase 1} pretrain the ViT on th
 
     % --- 4. Linear Attention Block ---
     \node[box, right=2.5cm of qkv, fill=green!5, minimum height=2cm] (linattn) {Linear Attention \\ (Prefix-Scan)};
-    
+
     % Recurrent Memory loop for Linear Attention
     \draw[->, thick, loop below, distance=1cm, out=250, in=290] (linattn) to node[below, font=\footnotesize] {$S_{t-1} \xrightarrow{\bar{w}_t} S_t$} (linattn);
 
@@ -84,14 +84,15 @@ Training follows a two-phase curriculum. \textbf{Phase 1} pretrain the ViT on th
 
     % --- Bounding Box for the Layer ---
     \begin{pgfonlayer}{background}
-        \filldraw[fill=gray!5, draw=gray, dashed, rounded corners]
-            ([xshift=-0.5cm, yshift=1cm]actor.north west) rectangle ([xshift=0.5cm, yshift=-1.5cm]linattn.south east);
-        \node[above right, font=\bfseries, text=gray] at ([xshift=-0.5cm, yshift=1cm]actor.north west) {Encoder Block (Layer $l$) / MDP Time Step $l$};
+      \filldraw[fill=gray!5, draw=gray, dashed, rounded corners]
+      ([xshift=-0.5cm, yshift=1cm]actor.north west) rectangle ([xshift=0.5cm, yshift=-1.5cm]linattn.south east);
+      \node[above right, font=\bfseries, text=gray] at ([xshift=-0.5cm, yshift=1cm]actor.north west) {Encoder Block (Layer $l$) / MDP Time Step $l$};
     \end{pgfonlayer}
 
-    \end{tikzpicture}
-    \caption{Architecture of the MARL-Gated Linear Attention Block. At each layer $l$, the swarm of $N$ agents independently evaluates the local features to produce survival weights $\mathbf{w}_l$. These weights dictate the information flow into the chunkwise recurrent memory $S_t$. Finally, the intermediate linear attention output is refined via a Hadamard-gated transformation to produce the state $x_{l+1}$ for the next layer.}
-    \label{fig:architecture}
+  \end{tikzpicture}
+
+  \caption{Architecture of the MARL-Gated Linear Attention Block. At each layer $l$, the swarm of $N$ agents independently evaluates the local features to produce survival weights $\mathbf{w}_l$. These weights dictate the information flow into the chunkwise recurrent memory $S_t$. Finally, the intermediate linear attention output is refined via a Hadamard-gated transformation to produce the state $x_{l+1}$ for the next layer.}
+  \label{fig:architecture}
 \end{figure*}
 
 \subsection{Chunkwise Formulation of Linear Attention}
@@ -110,7 +111,7 @@ Rather than computing a full sequence matrix, we maintain two recurrent memory r
   Z_t = Z_{t-1} + \sum_{i \in \text{chunk } t} \phi(K_{i, t})^\top
 \end{equation}
 
-Following RALA \cite{fan2025breaking}, we use the Hadamard transformation to fix the low rank problem of the linear attention:
+Following RALA \cite{fan2025breaking}, we use Hadamard transformation to fix the low-rank problem of linear attention:
 \begin{equation}
   \phi(X) = \sigma(HX)
 \end{equation}
@@ -128,42 +129,42 @@ By reformulating linear attention into a blockwise execution, we isolate the imp
 \subsubsection{State Space}
 To enable parallel execution across all $T$ chunks, the agent's observation is localized. For each layer $l$ (representing the temporal step), the state $s_{n,l}$ for agent $n \in \{1,\dots,N\}$ is derived directly from the local visual features:
 \begin{equation}
-    s_{n,l} = \mathrm{Proj}(x_{n,l}),
+  s_{n,l} = \mathrm{Proj}(x_{n,l}),
 \end{equation}
-where $x_{n,l}$ is the feature embedding of the $n$-th token at layer $l$, and $\mathrm{Proj}(\cdot)$ is a shared lightweight projection. 
+where $x_{n,l}$ is the feature embedding of the $n$-th token at layer $l$, and $\mathrm{Proj}(\cdot)$ is a shared lightweight projection.
 
 \subsubsection{Action Space}
 The swarm of $N$ agents utilizes a shared Actor-Critic policy $\pi_\theta$ to evaluate the tokens in parallel. Each agent $n$ outputs a scalar continuous weight $w_{n,l} \in (0,1)$, representing its relative importance to the task. For a specific chunk $t$, the agents produce a collective action vector $\mathbf{w}_t$:
 \begin{equation}
-    \mathbf{w}_t = [w_{t,1}, w_{t,2}, \dots, w_{t,C}]^\top
+  \mathbf{w}_t = [w_{t,1}, w_{t,2}, \dots, w_{t,C}]^\top
 \end{equation}
 \subsubsection{Reward Function}
 The swarm is governed by a global cooperative reward function calculated at the terminal layer $L$. To enforce the computational budget $B_{\text{target}}$ without hard pruning, we define the total expenditure as the empirical mean of the weights:
 \begin{equation}
-    B_{\text{used}} = \frac{1}{L \cdot N} \sum_{l=1}^L \sum_{n=1}^N w_{n,l}
+  B_{\text{used}} = \frac{1}{L \cdot N} \sum_{l=1}^L \sum_{n=1}^N w_{n,l}
 \end{equation}
 The terminal reward $R$:
 \begin{equation}
-    R = R_{task} - \lambda \cdot \max(0, B_{\text{used}} - B_{\text{target}}),
+  R = R_{task} - \lambda \cdot \max(0, B_{\text{used}} - B_{\text{target}}),
 \end{equation}
 where $\lambda$ is a penalty coefficient. This penalizes the swarm at the end of the forward pass if their collective survival weights exceed the target capacity, forcing agents to aggressively dropping the weight while maintaning the model performance
 
 \subsubsection{Squashed Gaussian Actor-Critic Network}
 To enable continuous down-weighting of uninformative features, we model the swarm's policy $\pi_\theta(a_{n,l} \mid s_{n,l})$ as a \textbf{Squashed Gaussian} distribution. This approach avoids the non differentiable  of discrete gatings and the competitive constraints of global Softmax operations, allowing each agent to determine its survival weight independently.
 
-The shared Actor network computes the parameters of an unbounded Normal distribution for every agent $n \in \{1, \dots, N\}$ at layer $l$. To ensure numerical stability, the standard deviation is passed through a Softplus activation with a small $\epsilon$ floor:
+The shared Actor network computes the parameters of an unbounded Normal distribution for every agent $n \in \{1, \dots, N\}$ at layer $l$. To ensure numerical stability, the standard deviation is passed through a softplus activation with a small $\epsilon$ floor:
 \begin{equation}
-    \mu_{n,l} = \mathrm{MLP}_\mu(s_{n,l}), \quad \sigma_{n,l} = \mathrm{Softplus}(\mathrm{MLP}_\sigma(s_{n,l})) + \epsilon
+  \mu_{n,l} = \mathrm{MLP}_\mu(s_{n,l}), \quad \sigma_{n,l} = \mathrm{softplus}(\mathrm{MLP}_\sigma(s_{n,l})) + \epsilon
 \end{equation}
 
 During training, actions are sampled using the reparameterization trick to allow backpropagation through stochastic nodes. The raw sample $x_{n,l}$ is squashed via a hyperbolic tangent and shifted into the valid continuous weighting space of $(0, 1)$:
 \begin{equation}
-    w_{n,l} = \frac{\tanh(x_{n,l}) + 1}{2}, \quad x_{n,l} \sim \mathcal{N}(\mu_{n,l}, \sigma_{n,l}^2)
+  w_{n,l} = \frac{\tanh(x_{n,l}) + 1}{2}, \quad x_{n,l} \sim \mathcal{N}(\mu_{n,l}, \sigma_{n,l}^2)
 \end{equation}
 
 By decoupling the weights from a global sum, the swarm can collectively silence redundant spatial regions (where $w_{n,l} \to 0$) or amplify high-utility features. However, the non-linear Tanh transformation alters the probability density. To maintain the mathematical integrity of the PPO objective, we apply the \textbf{Jacobian correction} for the log-probability:
 \begin{equation}
-    \log \pi(w_{n,l}) = \log p(x_{n,l}) - \log \left( \frac{1 - \tanh^2(x_{n,l})}{2} + \epsilon \right)
+  \log \pi(w_{n,l}) = \log p(x_{n,l}) - \log \left( \frac{1 - \tanh^2(x_{n,l})}{2} + \epsilon \right)
 \end{equation}
 
 Simultaneously, a shared Value network (Critic) $V_\phi(s_{n,l})$ estimates the expected episodic return. This provides a baseline to calculate the advantage $\hat{A}$, reducing variance during the cooperative policy update.
@@ -173,27 +174,27 @@ Initializing a swarm of RL agents from scratch in a high-dimensional visual spac
 
 After warming up the backbone on a dense classification task, we compute the squared gradients of the cross-entropy loss with respect to the token features to approximate their informational utility. These scores, normalized to $\tilde{\mathcal{I}}_n \in [0, 1]$, represent the survival value for each agent. The Actor and Critic are then pretrained via supervised learning to mimic this oracle. The Actor minimizes the Mean Squared Error (MSE) between its deterministic mean prediction and the Fisher utility, while the Critic learns the expected saliency of the state:
 \begin{equation}
-    \mathcal{L}_{\text{Actor}} = \mathbb{E} \left[ \sum_{n=1}^N \left( \mu_{n,l}(s_{n,l}) - \tilde{\mathcal{I}}_n \right)^2 \right]
+  \mathcal{L}_{\text{Actor}} = \mathbb{E} \left[ \sum_{n=1}^N \left( \mu_{n,l}(s_{n,l}) - \tilde{\mathcal{I}}_n \right)^2 \right]
 \end{equation}
 \begin{equation}
-    \mathcal{L}_{\text{Critic}} = \mathbb{E} \left[ \sum_{n=1}^N \left( V_\phi(s_{n,l}) - \sum_{j=1}^N \tilde{\mathcal{I}}_j \right)^2 \right]
+  \mathcal{L}_{\text{Critic}} = \mathbb{E} \left[ \sum_{n=1}^N \left( V_\phi(s_{n,l}) - \sum_{j=1}^N \tilde{\mathcal{I}}_j \right)^2 \right]
 \end{equation}
 where $s_{n,l}$ is the local feature observation of agent $n$ at layer $l$, and $\tilde{\mathcal{I}}_j$ is the ground-truth Fisher saliency for token $j$. By forcing every agent's local Value head to predict the global saliency sum, the swarm develops a shared understanding of the total information available in the image.
 
 \subsection{Finetuning: Cooperative Policy Optimization}
 In Phase 2, the full system is optimized end-to-end via PPO. Aggressive down-weighting of tokens by the swarm can cause the recurrent memory $S_t$ to stagnate. To mitigate this, we augment the memory update with a \textbf{state dilution term} $\Gamma_\tau$, which represents a fraction of the historical average scaled by the degree of suppression $(1 - \bar{w}_\tau)$:
 \begin{equation}
-    \Gamma_\tau = \gamma \cdot (1 - \bar{w}_\tau) \cdot \frac{S_{\tau-1}}{\tau-1}
+  \Gamma_\tau = \gamma \cdot (1 - \bar{w}_\tau) \cdot \frac{S_{\tau-1}}{\tau-1}
 \end{equation}
-When the swarm collectively suppresses a chunk ($\bar{w}_\tau \to 0$), $\Gamma_\tau$ tops up the memory with the mean historical contribution, preventing gradient vanishing. 
+When the swarm collectively suppresses a chunk ($\bar{w}_\tau \to 0$), $\Gamma_\tau$ tops up the memory with the mean historical contribution, preventing gradient vanishing.
 
 Using Generalized Advantage Estimation ($\hat{A}$) derived from the Critic, the swarm is updated via the clipped PPO objective. To prevent premature policy convergence, we inject a Jacobian-corrected entropy bonus for the squashed Gaussian distribution:
 \begin{equation}
-    \mathcal{L}_{\mathrm{PPO}} = -\mathbb{E}\left[\min\left(r(\theta)\hat{A},\; \mathrm{clip}(r(\theta),1\pm\epsilon)\hat{A}\right)\right] - \lambda_{\mathrm{ent}} H(\pi_\theta),
+  \mathcal{L}_{\mathrm{PPO}} = -\mathbb{E}\left[\min\left(r(\theta)\hat{A},\; \mathrm{clip}(r(\theta),1\pm\epsilon)\hat{A}\right)\right] - \lambda_{\mathrm{ent}} H(\pi_\theta),
 \end{equation}
 where the entropy $H(\pi_\theta)$ accounts for the Tanh-squashing transformation:
 \begin{equation}
-    H(\pi_\theta) = \frac{1}{2}\log(2\pi e\sigma^2) + \mathbb{E}\left[\log \left( \frac{1 - \tanh^2(x)}{2} + \epsilon \right) \right]
+  H(\pi_\theta) = \frac{1}{2}\log(2\pi e\sigma^2) + \mathbb{E}\left[\log \left( \frac{1 - \tanh^2(x)}{2} + \epsilon \right) \right]
 \end{equation}
 
-During inference, stochastic sampling is disabled. The shared Actor deterministically produces the weight vector $\mathbf{w}_l \in (0,1)^N$ for each layer. 
+During inference, stochastic sampling is disabled. The shared Actor deterministically produces the weight vector $\mathbf{w}_l \in (0,1)^N$ for each layer.

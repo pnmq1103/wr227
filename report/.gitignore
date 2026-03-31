@@ -4,6 +4,7 @@
 *.log
 *.synctex.gz
 *.bbl
+*.brf
 *.blg
 *.out
 *.nav

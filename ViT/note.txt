@@ -1,5 +1,1 @@
-<<<<<<< Updated upstream
 # must review how tensor multiplication work
-=======
-# must review how tensor multiplication work
->>>>>>> Stashed changes

@@ -1,6 +1,6 @@
 Loading model from 'vit_stage_3_final.pth' for RL PRUNING (Soft Gating)...
 --- Running Evaluation: RL PRUNING (Soft Gating) ---
-                                                        
+
 =====================================================
 🎯 EVALUATION RESULTS: RL PRUNING (Soft Gating)
 =====================================================
@@ -15,7 +15,7 @@ Loading model from 'vit_stage_3_final.pth' for RL PRUNING (Soft Gating)...
 
 Loading model from 'vit_stage_3_final.pth' for DENSE ABLATION (100% Tokens)...
 --- Running Evaluation: DENSE ABLATION (100% Tokens) ---
-                                                        
+
 =====================================================
 🎯 EVALUATION RESULTS: DENSE ABLATION (100% Tokens)
 =====================================================
