@@ -40,3 +40,11 @@
   - train other models on our choosen dataset and compare
   - benchmark: a metric for time-performance (param,flops) trade-off
 - ablation study: remove components of our model (can substitute with other comparable components)
+
+## Feedback 
+- Perform T-test
+- Make the motivation clearer  
+- Abstract the attention mechanism (Transformer, ViT are just candidates), view the current work as framework that can be applied for different model using attention. 
+- Move the background (linear attention, softmax attention) into the method
+- Related work of linear attention should represent current papers that improve linear attention
+ 
