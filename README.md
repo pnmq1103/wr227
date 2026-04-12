@@ -14,7 +14,7 @@
 - [x] PA2: Introduction, Related Work
 - [x] PA3: Method
 - [x] PA4: Experiment and Results
-- [ ] PA5: Conclusion and Abstract
+- [x] PA5: Conclusion and Abstract
 - [ ] In-class Presentation
 
 ## Material
@@ -29,22 +29,27 @@
 - [x] Vision Transformer
 - [x] Format: 2 columns
 - [x] Refine introduction section
-- [ ] Revise RL method: 2 states keep and prune
-- [ ] Implement other standard token pruning methods
-- [ ] Preprocess and analyze another dataset to avoid overfitting
-- [ ] Benchmark and analyze performance of the models
+- [x] Revise RL method: 2 states keep and prune
+- [x] Implement other standard token pruning methods
+- [x] Preprocess and analyze another dataset to avoid overfitting
+- [x] Benchmark and analyze performance of the models
+- [ ] Implement object detection
 
 - introduction: ViT time -> different approaches [citations] -> linear -> underperform
   -> different approaches linear [citations] -> rl-based token pruning -> combine linear + rl with appropriate reward function.
 - experiment:
   - train other models on our choosen dataset and compare
-  - benchmark: a metric for time-performance (param,flops) trade-off
+  - benchmark: a metric for time-performance (param, flops) trade-off
 - ablation study: remove components of our model (can substitute with other comparable components)
+- quotation marks
+- refer to figures, tables
+- the disccusion about figures, tables should be in the same page
+- graph must use the same font as text
 
-## Feedback 
+## Feedback
+
 - Perform T-test
-- Make the motivation clearer  
-- Abstract the attention mechanism (Transformer, ViT are just candidates), view the current work as framework that can be applied for different model using attention. 
+- Make the motivation clearer
+- Abstract the attention mechanism (Transformer, ViT are just candidates), view the current work as framework that can be applied for different model using attention.
 - Move the background (linear attention, softmax attention) into the method
 - Related work of linear attention should represent current papers that improve linear attention
- 
