@@ -38,13 +38,41 @@ Vietnam National University Ho Chi Minh City, Viet Nam\\
 		\text{Parallel training} : \quad   & \mathbf{O} = \text{softmax}(\mathbf{Q}\mathbf{K}^\top \odot \mathbf{M})\mathbf{V}                                                       &  & \in \mathbb{R}^{L \times d} \\
 		\text{Iterative inference} : \quad & \mathbf{o}_t = \sum_{j=1}^t \frac{\exp(\mathbf{q}_t^\top \mathbf{k}_j)}{\sum_{l=1}^t \exp(\mathbf{q}_t^\top \mathbf{k}_l)} \mathbf{v}_j &  & \in \mathbb{R}^d
 	\end{align*}
-\end{frame}
+	where $\mathbf{M} \in \mathbb{R}^{L \times L}$ is the causal mask:
 
+\[
+\mathbf{M}_{i,j} = 
+\begin{cases} 
+-\infty & \text{if } j > i \\
+1 & \text{if } j \le i 
+\end{cases}
+\]
+\end{frame}
+\begin{frame}{Issues with Softmax Attention}
+\textbf{Training} 
+\begin{itemize}
+	\item Quadratic time complexity with respect to the number of tokens.
+\end{itemize}
+\textbf{Inference} 
+\begin{itemize}
+	\item Linear memory complexity
+	\item Needs KV cache for each token
+	\item High memory burden 
+\end{itemize}
+This is a huge issue when moving to Vision Transformer, where the number of tokens scales quadratically with the image size.
+\end{frame}
+\subsection{Linear Attention}
+\begin{frame}{Linear Attention}
+	
+\end{frame}
 \begin{frame}[allowframebreaks]{References}
 	\bibliographystyle{plain} % or unsrt, alpha, abbrv
 	\bibliography{main}
 \end{frame}
-
+\section{Related Work}
+\section{Proposed Method}
+\section{Dataset}
+\section{Results}
 % \begin{figure}[!htpb]
 %    \centering
 %    \includegraphics[width=0.7\linewidth]{IMG_PATH}
