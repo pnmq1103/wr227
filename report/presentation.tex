@@ -7,6 +7,11 @@
 \usepackage{graphicx}
 \usepackage{tikz}
 \usetikzlibrary{positioning, arrows.meta, backgrounds}
+\usepackage{xspace}
+\newcommand{\eg}{e.g.\@\xspace}
+\newcommand{\ie}{i.e.\@\xspace}
+\newcommand{\etal}{\textit{et al.}\@\xspace}
+
 \AtBeginSection[]
 {
   \begin{frame}
@@ -26,6 +31,7 @@ Vietnam National University Ho Chi Minh City, Viet Nam\\
 \date{}
 
 \begin{document}
+
 \frame{\titlepage}
 
 \begin{frame}{Table of Contents}
@@ -85,7 +91,7 @@ This is a huge issue when moving to Vision Transformer, where the number of toke
         \text{Parallel training:} \quad & \mathbf{O} = \kappa(\mathbf{Q})\kappa(\mathbf{K}^\top \odot \mathbf{M})\mathbf{V} & &\in \mathbb{R}^{L \times d} \\
         \text{Iterative inference:} \quad & \mathbf{o}_t = \frac{\kappa(\mathbf{q}_t) \left( \sum_{j=1}^t \kappa(\mathbf{k}_j)^\top \mathbf{v}_j \right)}{\kappa(\mathbf{q}_t) \left( \sum_{l=1}^t \kappa(\mathbf{k}_l)^\top \right)} & &\in \mathbb{R}^d
     \end{align*}
-    where $\kappa(\cdot)$ applies a nonlinear feature map (e.g., ReLU or ELU) to ensure non-negative similarities.
+    where $\kappa(\cdot)$ applies a nonlinear feature map (\eg, ReLU or ELU) to ensure non-negative similarities.
 \end{frame}
 \begin{frame}{Matrix-Valued Hidden States}
     We have $\kappa(\cdot)$ is the nonlinear feature map applied to the queries and keys. By dropping the normalization denominator, we can rearrange the unnormalized attention equation to reveal a matrix-valued hidden state: 
@@ -131,27 +137,31 @@ This is a huge issue when moving to Vision Transformer, where the number of toke
         
     \end{columns}
 \end{frame}
+
 \section{Related Work}
+
 \begin{frame}{Related Work: Enhancing Linear Attention Performance}
     \textbf{Mitigating the Expressiveness Gap with Softmax}
     \vspace{0.2cm}
     \begin{itemize}
-        \item \textbf{Kernel Approximations \& Sharpness:} Early methods (e.g., Performer, Cosformer) focused on alternative mathematical approximations of the Softmax operator or cosine reweighting to restore the "sharpness" of attention maps.
-        \item \textbf{Focus Mechanisms:} Approaches like Focused Linear Attention (FLatten) apply specialized mapping functions combined with Depthwise Convolutions (DWConv) to restore the model's ability to capture fine-grained local context.
-        \item \textbf{Hardware-Aware Gating \& SSMs:} Modern architectures (e.g., Gated Linear Attention, MLLA) introduce data-dependent gating and bridge concepts with State-Space Models (like Mamba) to increase dynamic routing capabilities without sacrificing parallel efficiency.
+        \item \textbf{Kernel Approximations \& Sharpness:} Early methods (\eg, Performer~\cite{choromanski2021rethinking}, Cosformer~\cite{qin2022cosformer}) focused on alternative mathematical approximations of the Softmax operator or cosine reweighting to restore the ``sharpness'' of attention maps.
+        \item \textbf{Focus Mechanisms:} Focused Linear Attention (FLatten)~\cite{han2023flatten} apply specialized mapping functions combined with Depthwise Convolutions (DWConv) to restore the model's ability to capture fine-grained local context.
+        \item \textbf{Hardware-Aware Gating \& SSMs:} Modern architectures (\eg, Gated Linear Attention~\cite{yang2026gated}) introduce data-dependent gating and bridge concepts with State-Space Models (Mamba~\cite{gu2024mamba}) to increase dynamic routing capabilities without sacrificing parallel efficiency.
     \end{itemize}
 \end{frame}
 
 \begin{frame}{Rank-Augmented Linear Attention (RALA)}
-    \textbf{Breaking the Low-Rank Dilemma (Fan et al., CVPR 2025)}
+    \textbf{Fan \etal, Breaking the Low-Rank Dilemma~\cite{fan2025breaking}}
     \vspace{0.2cm}
     \begin{itemize}
         \item \textbf{The Core Issue:} Linear attention suffers severe performance drops in vision tasks because its output feature maps collapse into a \textit{low-rank} state, significantly restricting feature diversity compared to Softmax.
         \item \textbf{KV Buffer Augmentation:} RALA use a softmax ranking to restructure token weights inside the memory buffer. This enhances information richness and increases the matrix rank.
-        \item \textbf{The Result (RAVLT):} Achieves Softmax-level performance (e.g., 84.4\% Top-1 on ImageNet-1k). 
+        \item \textbf{The Result (RAVLT):} Achieves Softmax-level performance (\eg, 84.4\% Top-1 on ImageNet-1k). 
     \end{itemize}
 \end{frame} 
-\begin{frame}{RALA: KV Buffer Augmentation}
+
+
+\begin{frame}{KV Buffer Augmentation}
     To prevent the memory buffer from collapsing into a low-rank state, RALA modulates each token's contribution using a context-aware coefficient $\alpha_j$.
     
     First, it computes a global query $\mathbf{q}_{g}$ to evaluate the global relevance of each key:
@@ -166,9 +176,11 @@ This is a huge issue when moving to Vision Transformer, where the number of toke
         \mathbf{o}_i &= \mathbf{S} \kappa(\mathbf{q}_i) & &\in \mathbb{R}^{d}
     \end{align*}
 \end{frame}
+
 \section{Proposed Method}
+
 \begin{frame}{The problem with RALA's softmax ranking}
-    \textbf{Loss of Discriminative Power (Over-smoothing)}
+    \textbf{Loss of Discriminative Power}
     
     \begin{itemize}
         \item \textbf{Denominator Inflation:} As $N$ grows, $\sum_{m=1}^N \exp(\cdot)$ dominates.
@@ -178,17 +190,66 @@ This is a huge issue when moving to Vision Transformer, where the number of toke
 
     \begin{figure}
         \centering
-        \includegraphics[height=0.4\textheight, keepaspectratio]{images/rala_heatmap_epoch_12.png}
-        \caption{Heat map of RALA's softmax token weighting when implementing on baseline model}
-        \label{fig:softmax_saturation}
+        \includegraphics[height=0.4\textheight, keepaspectratio]{images/rala.png}
+        \caption{Heat map of RALA's softmax token weighting when implementing on baseline model}~\label{fig:softmax_saturation}
     \end{figure}
 \end{frame}
+
+
 \begin{frame}{Architecture}
-To tackle this issue, we adopted the RALA framework and proposed using a gating mechanism for each token in replacement of the softmax weighting. Specifically, we use a MARL framework to assign
-a weight $w \in (0,1)$ for each token.
+To tackle this issue, we adopt the RALA framework and propose using a gating mechanism for each token as a replacement for the softmax weighting. Specifically, we use a MARL framework to assign a weight $w \in (0,1)$ for each token.
 \input{images/architecture.tex}
 \end{frame}
 
+
+\begin{frame}{Markov Decision Process Formulation}
+    \textbf{State Space ($\mathcal{S}$)}
+    \begin{itemize}
+        \item At each layer $l$, the state $s_{n,l}$ for agent $n \in \{1,\dots,N\}$ is a lightweight projection of the current visual features:
+        \begin{equation}
+            s_{n,l} = \mathrm{Proj}(x_{n,l}) \in \mathbb{R}^{d_{half}}
+        \end{equation}
+    \end{itemize}
+
+    \textbf{Action Space ($\mathcal{A}$)}
+    \begin{itemize}
+        \item Each agent $n$ outputs a continuous weight representing its relative importance:
+        \begin{equation}
+            a_{n,l} = w_{n,l} \in (0,1)
+        \end{equation}
+    \end{itemize}
+
+    \textbf{State Transition (Dynamics)}
+    \begin{itemize}
+        \item The environment (Transformer layers) updates the state via the gated linear attention mechanism:
+        \begin{equation}
+            x_{n,l+1} = x_{n,l} + \mathrm{FFN}\left( \sigma(\mathbf{W}_g x_{n,l}) \odot (\mathbf{S}_{t,l} \kappa(\mathbf{q}_{n,l})) \right)
+        \end{equation}
+        \item The agent's next observation $s_{n,l+1}$ is then derived from this updated feature embedding.
+    \end{itemize}
+\end{frame}
+
+
+\begin{frame}{Learning Objectives and Reward Design}
+    \textbf{Terminal Reward Function}
+    To encourage efficient gating, the reward $R$ is calculated at the final layer and broadcasted to the entire swarm:
+    \begin{equation}
+        R = \underbrace{-\mathcal{L}_{CE}}_{\text{Task}} - \underbrace{\lambda_b \bar{w}}_{\text{Budget}} - \underbrace{\lambda_s \left[ \bar{w}(1-\bar{w}) \right]}_{\text{Sparsity}}
+    \end{equation}
+    where $\bar{w}$ is the mean activation. This pushes agents toward \textit{bimodal} decisiveness (0 or 1).
+
+    \textbf{Co-Optimization Objective}
+    We minimize a joint loss function to train the ViT backbone and the Actor-Critic policy $\pi_\theta$ simultaneously:
+    \begin{equation}
+        \mathcal{J}_{\text{total}} = \mathcal{L}_{CE} + \mathcal{L}_{PPO} + \mathcal{L}_{\text{reg}}
+    \end{equation}
+
+    \begin{itemize}
+        \item \textbf{Classification ($\mathcal{L}_{CE}$):} Standard cross-entropy for the backbone.
+        \item \textbf{Policy ($\mathcal{L}_{PPO}$):} PPO-Clip objective using global advantage $\hat{A} = R - V_\phi(s)$ to stabilize the swarm's collective behavior.
+        \item \textbf{Regularization ($\mathcal{L}_{\text{reg}}$):} Direct gradient-based budget and sparsity penalties to accelerate convergence.
+    \end{itemize}
+\end{frame}
 \section{Dataset}
 
 \begin{frame}{Dataset Selection}
@@ -197,7 +258,7 @@ a weight $w \in (0,1)$ for each token.
 
     \begin{itemize}
         \setlength\itemsep{1em}
-        \item \textbf{Computational Feasibility:} Realistic to train on accessible hardware (e.g., consumer-grade GPUs).
+        \item \textbf{Computational Feasibility:} Realistic to train on accessible hardware (\eg, consumer-grade GPUs).
         \item \textbf{Accelerated Iteration:} Significantly reduces training time per epoch.
         \item \textbf{Representative Complexity:} 
         \begin{itemize}
@@ -229,32 +290,90 @@ a weight $w \in (0,1)$ for each token.
 
 \section{Results}
 
-\begin{frame}{Image Classification}
+\begin{frame}{Image Classification Results}
     \begin{table}
         \centering
         \resizebox{\textwidth}{!}{%
-        \begin{tabular}{cccc}
-						\textbf{Model} & \textbf{Params (M)} & \textbf{FLOPS (G)} & \textbf{Top1-acc (\%)} \\
+        \begin{tabular}{lccc}
             \toprule
+            \textbf{Model} & \textbf{Params (M)} & \textbf{Attention Type} & \textbf{Top1-acc (\%)} \\
             \midrule
+            RMT~\cite{fan2024rmt} & 14 & Softmax & 57.56 \\
+            RALVT~\cite{fan2025breaking} & 14 & Linear (Rank-Aug) & 69 \\
+            \midrule
+            Baseline (Vanilla) & 14 & Linear (ELU) & 51 \\
+            Baseline + Sigmoid & 14 & Linear (Gated) & 50.5 \\
+            Baseline + Softmax & 14 & Limear (Rank-Aug) & 44.24 \\
+        	Baseline + MARL  & 14 & Linear (Gated) & 48.88 \\
             \bottomrule
         \end{tabular}%
         }
-        \vspace{0.5em}
-        \caption{Comparison of our selected training datasets against their full-scale variants.}
+        \vspace{1em}
+        \caption{Comparison of models' accuracy on the ImageNet-100 dataset}
+    \end{table}
+\end{frame}
+\begin{frame}{Image Classification Results}
+    \begin{table}
+        \centering
+        \resizebox{\textwidth}{!}{%
+        \begin{tabular}{lccc}
+            \toprule
+            \textbf{Model} & \textbf{Params (M)} & \textbf{Attention Type} & \textbf{Top1-acc (\%)} \\
+            \midrule
+            Baseline (Vanilla) & 14 & Linear (ELU) & 61.92 \\
+            Baseline + Sigmoid & 14 & Linear (Gated) & 58.77 \\
+        	Baseline + MARL  & 14 & Linear (Gated)& 58.37 \\
+            \bottomrule
+        \end{tabular}%
+        }
+        \vspace{1em}
+        \caption{Comparison of models' accuracy on the CIFAR-10 dataset}
     \end{table}
 \end{frame}
 
 
+\begin{frame}{Discussion}
+	\begin{itemize}
+		\item The token gating methods perform significantly better than the softmax weighting adopted from RALA~\cite{fan2025breaking}.
+		\item Although the baseline model (without gating) perform better than the augmented ones, we hypothesize that this is because
+of the image resolution we are testing are too small (144\(\times\)144), so weighting the token may actually hurts the performance.
+		\item The RMT and RALVT models perform significantly better due to their training script contain data augmentation, leading to unfair advantages. 
+	\end{itemize}
+\end{frame}
+
+\begin{frame}{Qualitative Results}
+    \begin{figure}
+        \centering
+        % Row (a)
+        \textbf{\footnotesize (a) Baseline + Softmax} \\
+        \includegraphics[width=0.85\textwidth, height=0.22\textheight, keepaspectratio]{images/rala.png}
+        \\[0.4em] 
+
+        % Row (b)
+        \textbf{\footnotesize (b) Baseline + Sigmoid} \\
+        \includegraphics[width=0.85\textwidth, height=0.22\textheight, keepaspectratio]{images/sigmoid.png}
+        \\[0.4em]
+
+        % Row (c)
+        \textbf{\footnotesize (c) Baseline + MARL} \\
+        \includegraphics[width=0.85\textwidth, height=0.22\textheight, keepaspectratio]{images/marl.png}
+
+        \vspace{0.2cm}
+        \caption{\footnotesize Visual comparison of attention heatmaps across different gating strategies.}
+    \end{figure}
+\end{frame}
+\section{Conconlusion}
+\begin{frame}{Conclusion}
+\begin{itemize}
+	\item In this work, we attempt to improve the linear attention's performance in ViT models. We proposed a 
+MARL framework to perform token gating as a way to augment the rank and filter the hidden state matrix.
+\item The current result shows that the gating mechanisms perform better than the softmax weighting. However, the vanilla baseline has the best result.
+\item In the future work, we will perform more experiment on different image sizes, datasets and more tasks such as object detection, segmentation. The linear attention can also 
+be transfered to different models not just ViTs. 
+\end{itemize}
+\end{frame}
 \begin{frame}[allowframebreaks]{References}
 	\bibliographystyle{plain} % or unsrt, alpha, abbrv
 	\bibliography{main}
 \end{frame}
-
-% \begin{figure}[!htpb]
-%    \centering
-%    \includegraphics[width=0.7\linewidth]{IMG_PATH}
-%    \caption{FIG_NAME}{CAPTION}
-% \end{figure}
-
 \end{document}
