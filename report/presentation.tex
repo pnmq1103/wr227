@@ -10,7 +10,7 @@
   \end{frame}
 }
 
-\title[Linear Attention]{Improving Vision Transformer's Time Perfomace via Linear Attention and Reinforcement Learning Gating}
+\title[Linear Attention]{Improving Linear Attention's Perfomance via Token Gating in Vision Transformer}
 
 \author[]{Chi-Van Vong \and Minh-Quan Pham Nguyen}
 
@@ -28,8 +28,15 @@ Vietnam National University Ho Chi Minh City, Viet Nam\\
 \end{frame}
 
 \section{Introduction}
-\begin{frame}{Introduction}
-	\cite{dosovitskiy2020image}
+\subsection{Softmax Attention}
+\begin{frame}{Softmax Attention}
+In recent years, softmax attention has been used widely for many deep learning models, specifically Transformer and more lately Vision Transformer. The softmax attention is formally defined as: 
+
+\begin{align*}
+\text{Parallel training} : \quad & \mathbf{O} = \text{softmax}(\mathbf{Q}\mathbf{K}^\top \odot \mathbf{M})\mathbf{V} && \in \mathbb{R}^{L \times d} \\
+\text{Iterative inference} : \quad & \mathbf{o}_t = \sum_{j=1}^t \frac{\exp(\mathbf{q}_t^\top \mathbf{k}_j)}{\sum_{l=1}^t \exp(\mathbf{q}_t^\top \mathbf{k}_l)} \mathbf{v}_j && \in \mathbb{R}^d
+\end{align*}
+
 \end{frame}
 
 \begin{frame}[allowframebreaks]{References}
