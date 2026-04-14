@@ -41,8 +41,7 @@ Vietnam National University Ho Chi Minh City, Viet Nam\\
 \section{Introduction}
 
 \begin{frame}{Problem}
-	Softmax attention performs well but scale costly. Linear attention scales well but perform unsatisfactorily. 
-	We try to improve linear attention.
+	Although softmax attention is widely used, its quadratic complexity leads to high computational costs. Linear attention solves this scaling issue but often fails to match the accuracy of softmax. In this paper, we propose a Multi-Agent Reinforcement Learning (MARL) gating framework that learns to weight each token's importance, aiming to improve the linear attention performance. 
 \end{frame}
 
 \section{Background}
@@ -298,8 +297,8 @@ To tackle this issue, we adopt the RALA framework and propose using a gating mec
             \toprule
             \textbf{Model} & \textbf{Params (M)} & \textbf{Attention Type} & \textbf{Top1-acc (\%)} \\
             \midrule
-            RMT~\cite{fan2024rmt} & 14 & Softmax & 57.56 \\
-            RALVT~\cite{fan2025breaking} & 14 & Linear (Rank-Aug) & 69 \\
+            RMT & 14 & Softmax & 57.56 \\
+            RALVT & 14 & Linear (Rank-Aug) & 69 \\
             \midrule
             Baseline (Vanilla) & 14 & Linear (ELU) & 51 \\
             Baseline + Sigmoid & 14 & Linear (Gated) & 50.5 \\
@@ -336,8 +335,8 @@ To tackle this issue, we adopt the RALA framework and propose using a gating mec
 	\begin{itemize}
 		\item The token gating methods perform significantly better than the softmax weighting adopted from RALA~\cite{fan2025breaking}.
 		\item Although the baseline model (without gating) perform better than the augmented ones, we hypothesize that this is because
-of the image resolution we are testing are too small (144\(\times\)144), so weighting the token may actually hurts the performance.
-		\item The RMT and RALVT models perform significantly better due to their training script contain data augmentation, leading to unfair advantages. 
+of the image resolution we are testing are too small (144\(\times\)144), so weighting the tokens may actually hurts the performance.
+		\item The RMT~\cite{fan2024rmt} and RALVT models perform significantly better due to their training script contain data augmentation, leading to unfair advantages. 
 	\end{itemize}
 \end{frame}
 
