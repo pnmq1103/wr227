@@ -3,6 +3,10 @@
 \setbeamertemplate{frametitle continuation}{}
 \usepackage[T1]{fontenc}
 \usepackage{lmodern}
+\usepackage{booktabs}
+\usepackage{graphicx}
+\usepackage{tikz}
+\usetikzlibrary{positioning, arrows.meta, backgrounds}
 \AtBeginSection[]
 {
   \begin{frame}
@@ -30,9 +34,17 @@ Vietnam National University Ho Chi Minh City, Viet Nam\\
 
 \section{Introduction}
 
+\begin{frame}{Problem}
+	Softmax attention performs well but scale costly. Linear attention scales well but perform unsatisfactorily. 
+	We try to improve linear attention.
+\end{frame}
+
+\section{Background}
+
 \subsection{Softmax Attention}
+
 \begin{frame}{Softmax Attention}
-	In recent years, softmax attention has been used widely for many deep learning models, specifically Transformer and more lately Vision Transformer. The softmax attention is formally defined as:
+	In recent years, softmax attention has been widely used for many deep learning models, specifically Transformer and Vision Transformer. Softmax attention is formally defined as:
 
 	\begin{align*}
 		\text{Parallel training} : \quad   & \mathbf{O} = \text{softmax}(\mathbf{Q}\mathbf{K}^\top \odot \mathbf{M})\mathbf{V}                                                       &  & \in \mathbb{R}^{L \times d} \\
@@ -48,6 +60,8 @@ Vietnam National University Ho Chi Minh City, Viet Nam\\
 \end{cases}
 \]
 \end{frame}
+
+
 \begin{frame}{Issues with Softmax Attention}
 \textbf{Training} 
 \begin{itemize}
@@ -61,18 +75,182 @@ Vietnam National University Ho Chi Minh City, Viet Nam\\
 \end{itemize}
 This is a huge issue when moving to Vision Transformer, where the number of tokens scales quadratically with the image size.
 \end{frame}
+
+
 \subsection{Linear Attention}
+
 \begin{frame}{Linear Attention}
-	
+    In linear attention, we approximate the softmax similarity matrix by expressing it as an inner product of feature maps:
+    \begin{align*}
+        \text{Parallel training:} \quad & \mathbf{O} = \kappa(\mathbf{Q})\kappa(\mathbf{K}^\top \odot \mathbf{M})\mathbf{V} & &\in \mathbb{R}^{L \times d} \\
+        \text{Iterative inference:} \quad & \mathbf{o}_t = \frac{\kappa(\mathbf{q}_t) \left( \sum_{j=1}^t \kappa(\mathbf{k}_j)^\top \mathbf{v}_j \right)}{\kappa(\mathbf{q}_t) \left( \sum_{l=1}^t \kappa(\mathbf{k}_l)^\top \right)} & &\in \mathbb{R}^d
+    \end{align*}
+    where $\kappa(\cdot)$ applies a nonlinear feature map (e.g., ReLU or ELU) to ensure non-negative similarities.
 \end{frame}
+\begin{frame}{Matrix-Valued Hidden States}
+    We have $\kappa(\cdot)$ is the nonlinear feature map applied to the queries and keys. By dropping the normalization denominator, we can rearrange the unnormalized attention equation to reveal a matrix-valued hidden state: 
+    \begin{align*}
+        \mathbf{o}_t &= \sum_{j=1}^t \big(\kappa(\mathbf{q}_t)^\top \kappa(\mathbf{k}_j)\big)\mathbf{v}_j \\
+        &= \sum_{j=1}^t \mathbf{v}_j\big(\kappa(\mathbf{k}_j)^\top \kappa(\mathbf{q}_t)\big) & & \text{since } \kappa(\mathbf{k}_j)^\top \kappa(\mathbf{q}_t) = \kappa(\mathbf{q}_t)^\top \kappa(\mathbf{k}_j) \in \mathbb{R} \\
+        &= \underbrace{\left( \sum_{j=1}^t \mathbf{v}_j \kappa(\mathbf{k}_j)^\top \right)}_{\textcolor{red}{\mathbf{S}_t \in \mathbb{R}^{d \times d}}} \kappa(\mathbf{q}_t) & & \text{By associativity}
+    \end{align*}
+\end{frame}
+\begin{frame}{Linear attention = Linear RNN + matrix-valued hidden states}
+    Let $\mathbf{S}_t = \sum_{j=1}^t \mathbf{v}_j \kappa(\mathbf{k}_j)^\top \in \mathbb{R}^{d \times d}$ be the matrix-valued hidden state caching the mapped keys, then:
+		\[
+    \begin{aligned}
+        \mathbf{S}_t &= \mathbf{S}_{t-1} + \mathbf{v}_t\kappa(\mathbf{k}_t)^\top &&\in \mathbb{R}^{d \times d}  \\
+        \mathbf{o}_t &= \mathbf{S}_t\kappa(\mathbf{q}_t) &&\in \mathbb{R}^d
+    \end{aligned}
+		\]
+    
+    \begin{itemize}
+        \item Linear attention implements {\color{red}\textbf{elementwise linear recurrence}}.
+        \item Linear attention has a {\color{red}\textbf{matrix-valued hidden state}}, significantly increasing the state size.
+    \end{itemize}
+\end{frame}
+
+\begin{frame}{Pros and Cons of Linear Attention}
+    \begin{columns}[T] % [T] aligns the columns at the top
+        
+        % --- PROS COLUMN ---
+        \begin{column}{0.48\textwidth}
+            \textbf{\textcolor{green!60!black}{Advantages}}
+            \begin{itemize}
+                \item \textbf{Linear Complexity:} Scales $\mathcal{O}(N)$ in time and memory during training and inference.
+                \item \textbf{Constant Memory Inference:} The RNN formulation requires $\mathcal{O}(1)$ memory per decoding step; there is no growing KV-cache.
+            \end{itemize}
+        \end{column}
+        % --- CONS COLUMN ---
+        \begin{column}{0.48\textwidth}
+            \textbf{\textcolor{red!60!black}{Limitations}}
+            \begin{itemize}
+                \item \textbf{Performance Gap:} Often largely underperforms standard softmax attention.
+            \end{itemize}
+        \end{column}
+        
+    \end{columns}
+\end{frame}
+\section{Related Work}
+\begin{frame}{Related Work: Enhancing Linear Attention Performance}
+    \textbf{Mitigating the Expressiveness Gap with Softmax}
+    \vspace{0.2cm}
+    \begin{itemize}
+        \item \textbf{Kernel Approximations \& Sharpness:} Early methods (e.g., Performer, Cosformer) focused on alternative mathematical approximations of the Softmax operator or cosine reweighting to restore the "sharpness" of attention maps.
+        \item \textbf{Focus Mechanisms:} Approaches like Focused Linear Attention (FLatten) apply specialized mapping functions combined with Depthwise Convolutions (DWConv) to restore the model's ability to capture fine-grained local context.
+        \item \textbf{Hardware-Aware Gating \& SSMs:} Modern architectures (e.g., Gated Linear Attention, MLLA) introduce data-dependent gating and bridge concepts with State-Space Models (like Mamba) to increase dynamic routing capabilities without sacrificing parallel efficiency.
+    \end{itemize}
+\end{frame}
+
+\begin{frame}{Rank-Augmented Linear Attention (RALA)}
+    \textbf{Breaking the Low-Rank Dilemma (Fan et al., CVPR 2025)}
+    \vspace{0.2cm}
+    \begin{itemize}
+        \item \textbf{The Core Issue:} Linear attention suffers severe performance drops in vision tasks because its output feature maps collapse into a \textit{low-rank} state, significantly restricting feature diversity compared to Softmax.
+        \item \textbf{KV Buffer Augmentation:} RALA use a softmax ranking to restructure token weights inside the memory buffer. This enhances information richness and increases the matrix rank.
+        \item \textbf{The Result (RAVLT):} Achieves Softmax-level performance (e.g., 84.4\% Top-1 on ImageNet-1k). 
+    \end{itemize}
+\end{frame} 
+\begin{frame}{RALA: KV Buffer Augmentation}
+    To prevent the memory buffer from collapsing into a low-rank state, RALA modulates each token's contribution using a context-aware coefficient $\alpha_j$.
+    
+    First, it computes a global query $\mathbf{q}_{g}$ to evaluate the global relevance of each key:
+    \begin{align*}
+        \mathbf{q}_{g} &= \frac{1}{N} \sum_{i=1}^N \mathbf{q}_i \\
+        \alpha_j &= N \times \frac{\exp(\mathbf{q}_{g}^\top \kappa(\mathbf{k}_j))}{\sum_{m=1}^N \exp(\mathbf{q}_{g}^\top \kappa(\mathbf{k}_m))}
+    \end{align*}
+    
+    The augmented matrix-valued hidden state $\mathbf{S}$ and the final output $\mathbf{o}_i$ for token $i$ are then calculated as:
+    \begin{align*}
+        \mathbf{S} &= \sum_{j=1}^N \alpha_j \mathbf{v}_j \kappa(\mathbf{k}_j)^\top & &\in \mathbb{R}^{d \times d} \\
+        \mathbf{o}_i &= \mathbf{S} \kappa(\mathbf{q}_i) & &\in \mathbb{R}^{d}
+    \end{align*}
+\end{frame}
+\section{Proposed Method}
+\begin{frame}{The problem with RALA's softmax ranking}
+    \textbf{Loss of Discriminative Power (Over-smoothing)}
+    
+    \begin{itemize}
+        \item \textbf{Denominator Inflation:} As $N$ grows, $\sum_{m=1}^N \exp(\cdot)$ dominates.
+        \item \textbf{Weight Collapse:} Coefficients $\alpha_j$ flatten toward $\approx 1/N$.
+        \item \textbf{Result:} Heat maps saturate, blending foreground and background.
+    \end{itemize}
+
+    \begin{figure}
+        \centering
+        \includegraphics[height=0.4\textheight, keepaspectratio]{images/rala_heatmap_epoch_12.png}
+        \caption{Heat map of RALA's softmax token weighting when implementing on baseline model}
+        \label{fig:softmax_saturation}
+    \end{figure}
+\end{frame}
+\begin{frame}{Architecture}
+To tackle this issue, we adopted the RALA framework and proposed using a gating mechanism for each token in replacement of the softmax weighting. Specifically, we use a MARL framework to assign
+a weight $w \in (0,1)$ for each token.
+\input{images/architecture.tex}
+\end{frame}
+
+\section{Dataset}
+
+\begin{frame}{Dataset Selection}
+    \textbf{Chosen Datasets:} CIFAR-10 and ImageNet-100
+    \vspace{0.5em}
+
+    \begin{itemize}
+        \setlength\itemsep{1em}
+        \item \textbf{Computational Feasibility:} Realistic to train on accessible hardware (e.g., consumer-grade GPUs).
+        \item \textbf{Accelerated Iteration:} Significantly reduces training time per epoch.
+        \item \textbf{Representative Complexity:} 
+        \begin{itemize}
+            \item ImageNet-100 retains the high resolution and visual diversity of ImageNet-1K but scales down the class count (100 vs. 1,000).
+            \item CIFAR-10 provides a robust, lightweight baseline for initial spatial feature extraction.
+        \end{itemize}
+    \end{itemize}
+\end{frame}
+
+\begin{frame}{Dataset Comparison}
+    \begin{table}
+        \centering
+        \resizebox{\textwidth}{!}{%
+        \begin{tabular}{lcccc}
+            \toprule
+            \textbf{Feature} & \textbf{CIFAR-10} & \textbf{CIFAR-100} & \textbf{ImageNet-100} & \textbf{ImageNet-1K} \\
+            \midrule
+            \textbf{Classes} & 10 & 100 & 100 & 1,000 \\
+            \textbf{Resolution} & $32 \times 32$ & $32 \times 32$ & $\sim 224 \times 224$ & $\sim 224 \times 224$ \\
+            \textbf{Training} & 50,000 & 50,000 & $\sim 130,000$ & $\sim 1.28$ Million \\
+            \textbf{Validation} & 10,000 & 10,000 & 5,000 & 50,000 \\
+            \bottomrule
+        \end{tabular}%
+        }
+        \vspace{0.5em}
+        \caption{Comparison of our selected training datasets against their full-scale variants.}
+    \end{table}
+\end{frame}
+
+\section{Results}
+
+\begin{frame}{Image Classification}
+    \begin{table}
+        \centering
+        \resizebox{\textwidth}{!}{%
+        \begin{tabular}{cccc}
+						\textbf{Model} & \textbf{Params (M)} & \textbf{FLOPS (G)} & \textbf{Top1-acc (\%)} \\
+            \toprule
+            \midrule
+            \bottomrule
+        \end{tabular}%
+        }
+        \vspace{0.5em}
+        \caption{Comparison of our selected training datasets against their full-scale variants.}
+    \end{table}
+\end{frame}
+
+
 \begin{frame}[allowframebreaks]{References}
 	\bibliographystyle{plain} % or unsrt, alpha, abbrv
 	\bibliography{main}
 \end{frame}
-\section{Related Work}
-\section{Proposed Method}
-\section{Dataset}
-\section{Results}
+
 % \begin{figure}[!htpb]
 %    \centering
 %    \includegraphics[width=0.7\linewidth]{IMG_PATH}

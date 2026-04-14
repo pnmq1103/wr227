@@ -1,0 +1,52 @@
+\begin{figure}[ht]
+  \centering
+  % Resizebox handles the width issue (Overfull \hbox)
+  \resizebox{0.95\textwidth}{!}{% 
+  \begin{tikzpicture}[
+      >=stealth,
+      % Reduced vertical distance from 1.5cm to 1.1cm to fix Overfull \vbox
+      node distance=1.1cm and 1.8cm, 
+      font=\small,
+      box/.style={rectangle, draw, rounded corners, minimum height=0.8cm, minimum width=2.2cm, align=center, fill=blue!5},
+      agent/.style={rectangle, draw, rounded corners, minimum height=0.8cm, minimum width=2.2cm, align=center, fill=red!10, dashed},
+      math/.style={circle, draw, minimum size=0.7cm, inner sep=0pt, fill=yellow!10},
+      arrow/.style={->, thick},
+      label/.style={above, font=\footnotesize}
+    ]
+
+    % --- Nodes ---
+    \node (input) {Input Features $\mathbf{x}_l$};
+    \node[agent, above right=0.4cm and 1.5cm of input] (actor) {Shared Actor-Critic \\ (Swarm of $N$ Agents)};
+    \node[right=0.8cm of actor] (weights) {Action Vector $\mathbf{w}_l$};
+    \node[box, below right=0.4cm and 1.5cm of input] (qkv) {Linear Projections \\ $Q_t, K_t, V_t$};
+    \node[box, right=2cm of qkv, fill=green!5, minimum height=1.5cm] (linattn) {Linear Attention};
+    \node[math, right=1.5cm of linattn] (hadamard) {$\odot$};
+    \node[box, above=0.8cm of hadamard, fill=purple!5] (gate) {Gate Function};
+    \node[right=1cm of hadamard] (output) {$\mathbf{x}_{l+1}$};
+
+    % --- Connections ---
+    \draw[arrow] (input) |- (actor) node[pos=0.75, above, font=\tiny] {$s_{n,l}$};
+    \draw[arrow] (input) |- (qkv);
+    \draw[arrow] (actor) -- (weights);
+    \draw[arrow] (qkv) -- (linattn) node[midway, below, font=\tiny] {Chunks};
+    \draw[arrow, dashed] (weights.south) -- (weights.south |- linattn.north) node[midway, right, font=\tiny] {$\mathbf{w}_t$};
+    \draw[arrow] (linattn) -- (hadamard);
+    \draw[arrow] (qkv.east) -- ++(0.5,0) |- (gate.west);
+    \draw[arrow] (gate) -- (hadamard);
+    \draw[arrow] (hadamard) -- (output);
+
+    % Recurrent Loop
+    \draw[->, thick, loop below, distance=0.8cm, out=250, in=290] (linattn) to node[below, font=\tiny] {$S_{t-1} \xrightarrow{\bar{w}_t} S_t$} (linattn);
+
+    % --- Background Layer ---
+    \begin{pgfonlayer}{background}
+      \filldraw[fill=gray!5, draw=gray, dashed, rounded corners]
+      ([xshift=-0.3cm, yshift=0.5cm]actor.north west) rectangle ([xshift=0.3cm, yshift=-1cm]linattn.south east);
+    \end{pgfonlayer}
+
+  \end{tikzpicture}
+  } % end of resizebox
+  
+  \vspace{-10pt} % Pulls caption up to save vertical space
+  \caption{\footnotesize MARL-Gated Linear Attention Architecture.}
+\end{figure}
