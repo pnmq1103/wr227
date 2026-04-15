@@ -120,8 +120,7 @@ Vietnam National University Ho Chi Minh City, Viet Nam\\
 	where $\kappa(\cdot)$ applies a nonlinear feature map (\eg, ReLU or ELU) to ensure non-negative similarities.
 \end{frame}
 \begin{frame}{Matrix-Valued Hidden States}
-	We have $\kappa(\cdot)$ is the nonlinear feature map applied to the queries and keys. By dropping the normalization denominator, we can rearrange the unnormalized attention equation to reveal a matrix-valued hidden state:
-	\begin{align*}
+	We can rearrange the unnormalized attention equation to reveal a matrix-valued hidden state: \begin{align*}
 		\mathbf{o}_t & = \sum_{j=1}^t \big(\kappa(\mathbf{q}_t)^\top \kappa(\mathbf{k}_j)\big)\mathbf{v}_j                                                                                                                                                                                                                  \\
 		             & = \sum_{j=1}^t \mathbf{v}_j\big(\kappa(\mathbf{k}_j)^\top \kappa(\mathbf{q}_t)\big)                                                                                &  & \text{since } \kappa(\mathbf{k}_j)^\top \kappa(\mathbf{q}_t) = \kappa(\mathbf{q}_t)^\top \kappa(\mathbf{k}_j) \in \mathbb{R} \\
 		             & = \underbrace{\left( \sum_{j=1}^t \mathbf{v}_j \kappa(\mathbf{k}_j)^\top \right)}_{\textcolor{red}{\mathbf{S}_t \in \mathbb{R}^{d \times d}}} \kappa(\mathbf{q}_t) &  & \text{by associativity}
@@ -138,7 +137,7 @@ Vietnam National University Ho Chi Minh City, Viet Nam\\
 
 	\begin{itemize}
 		\item Linear attention implements {\color{red}\textbf{elementwise linear recurrence}}.
-		\item Linear attention has a {\color{red}\textbf{matrix-valued hidden state}}, significantly increasing the state size.
+		\item Linear attention has a {\color{red}\textbf{matrix-valued hidden state}}.
 	\end{itemize}
 \end{frame}
 
@@ -170,9 +169,9 @@ Vietnam National University Ho Chi Minh City, Viet Nam\\
 	\textbf{Mitigating the Expressiveness Gap with Softmax}
 	\vspace{0.2cm}
 	\begin{itemize}
-		\item \textbf{Kernel Approximations \& Sharpness:} Early methods (\eg, Performer, Cosformer) focused on alternative mathematical approximations of the Softmax operator or cosine reweighting to restore the ``sharpness'' of attention maps.
-		\item \textbf{Focus Mechanisms:} Focused Linear Attention (FLatten) apply specialized mapping functions combined with Depthwise Convolutions (DWConv) to restore the model's ability to capture fine-grained local context.
-		\item \textbf{Hardware-Aware Gating \& SSMs:} Modern architectures (\eg, Gated Linear Attention) introduce data-dependent gating and bridge concepts with State-Space Models (Mamba) to increase dynamic routing capabilities without sacrificing parallel efficiency.
+		\item \textbf{Kernel Approximations \& Sharpness:} Performer, Cosformer focused on alternative mathematical approximations of the Softmax operator or cosine reweighting to restore the ``sharpness'' of attention maps.
+		\item \textbf{Focus Mechanisms:} Focused Linear Attention apply specialized mapping functions combined with Depthwise Convolutions to restore the model's ability to capture fine-grained local context.
+		\item \textbf{Hardware-Aware Gating \& State-Space Models (SSMs):} Gated Linear Attention introduces data-dependent gating, unifying Linear Attention with SSMs to enhance dynamic routing while preserving parallel efficiency.
 	\end{itemize}
 \end{frame}
 
@@ -256,9 +255,11 @@ Vietnam National University Ho Chi Minh City, Viet Nam\\
 	\end{itemize}
 \end{frame}
 
-\section{Dataset}
+\section{Experiments}
 
-\begin{frame}{Dataset Comparison}
+\begin{frame}{Experimental Design}
+	The models are trained from scratch on Image Classification using CIFAR-10 and ImageNet-100. Results are compared using Top1-acc.
+
 	\begin{table}
 		\centering
 		\resizebox{\textwidth}{!}{%
@@ -322,6 +323,28 @@ Vietnam National University Ho Chi Minh City, Viet Nam\\
 \end{frame}
 
 
+\begin{frame}{Image Classification Results}
+	\begin{figure}
+		\centering
+		% Row (a)
+		\textbf{\footnotesize (a) Baseline + Softmax} \\
+		\includegraphics[width=0.85\textwidth, height=0.2\textheight, keepaspectratio]{images/rala.png}
+		\\[0.4em]
+
+		% Row (b)
+		\textbf{\footnotesize (b) Baseline + Sigmoid} \\
+		\includegraphics[width=0.85\textwidth, height=0.2\textheight, keepaspectratio]{images/sigmoid.png}
+		\\[0.4em]
+
+		% Row (c)
+		\textbf{\footnotesize (c) Baseline + MARL} \\
+		\includegraphics[width=0.85\textwidth, height=0.2\textheight, keepaspectratio]{images/marl.png}
+
+		\vspace{0.2cm}
+		\caption{\footnotesize Visual comparison of attention heatmaps across different gating strategies.}
+	\end{figure}
+\end{frame}
+
 \begin{frame}{Discussion}
 	\begin{itemize}
 		\item The token gating methods perform significantly better than the softmax weighting adopted from RALA.
@@ -329,28 +352,6 @@ Vietnam National University Ho Chi Minh City, Viet Nam\\
 		      of the image resolution we are testing are too small (144\(\times\)144), so weighting the tokens may actually hurts the performance.
 		\item The RMT and RALVT models perform significantly better due to their training script contain data augmentation, leading to unfair advantages.
 	\end{itemize}
-\end{frame}
-
-\begin{frame}{Qualitative Results}
-	\begin{figure}
-		\centering
-		% Row (a)
-		\textbf{\footnotesize (a) Baseline + Softmax} \\
-		\includegraphics[width=0.85\textwidth, height=0.22\textheight, keepaspectratio]{images/rala.png}
-		\\[0.4em]
-
-		% Row (b)
-		\textbf{\footnotesize (b) Baseline + Sigmoid} \\
-		\includegraphics[width=0.85\textwidth, height=0.22\textheight, keepaspectratio]{images/sigmoid.png}
-		\\[0.4em]
-
-		% Row (c)
-		\textbf{\footnotesize (c) Baseline + MARL} \\
-		\includegraphics[width=0.85\textwidth, height=0.22\textheight, keepaspectratio]{images/marl.png}
-
-		\vspace{0.2cm}
-		\caption{\footnotesize Visual comparison of attention heatmaps across different gating strategies.}
-	\end{figure}
 \end{frame}
 
 % \begin{frame}[allowframebreaks]{References}
