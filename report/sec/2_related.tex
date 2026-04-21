@@ -4,33 +4,32 @@
 % For example, if your method incorporates data augmentation, you should briefly explain the purpose of augmentation and mention typical techniques such as CutMix or MixUp.
 
 \subsection{Vision Transformer}
-Transformer \cite{vaswani2017attention} model is initially created for NLP tasks and achieved remarkable success. However, they did not have much impact on CV until Alexey Dosovitskiy \etal \cite{rao2021dynamicvit} introduced Vision Transformer (ViT), which splits the image into many small patches and feed as tokens to the model. Although this approach demonstrated strong performance in many CV tasks, its quadratic complexity due to self-attention making it computationally expensive to process high resolution images. To address this, Microsoft Research proposed Swin Transformer \cite{liu2021swin}, which restricts attention to local windows, inspiring subsequent window-based variants. Other methods reduce attention cost by compressing keys or values using linear projections, strided convolutions, pooling, or patch clustering \cite{cai2023efficientvit,han2023flatten,han2024demystify,katharopoulos2020transformers,lu2024softmax,shen2021efficient}. Additionally, some variants explore alternative designs such as channel attention and softmax-free attention mechanisms.
+Transformer \cite{vaswani2017attention} model was initially created for NLP tasks and achieved remarkable success. However, they did not have much impact on CV until Alexey Dosovitskiy \etal \cite{rao2021dynamicvit} introduced ViT, which splits the image into many small patches and feeds as tokens to the model. Although this approach demonstrated strong performance in many CV tasks, its quadratic complexity due to self-attention makes it computationally expensive to process high resolution images. To address this, Microsoft Research proposed Swin Transformer \cite{liu2021swin}, which restricts attention to local windows, inspiring subsequent window-based variants. Other methods reduce attention cost by compressing keys or values using linear projections, strided convolutions, pooling, or patch clustering \cite{cai2023efficientvit,han2023flatten,han2024demystify,katharopoulos2020transformers,lu2024softmax,shen2021efficient}. Additionally, some variants explore alternative designs such as channel attention and softmax-free attention mechanisms.
 
 \subsection{Linear Attention}
-Linear Attention \cite{shen2021efficient} reduces the quadratic complexity of softmax attention by using kernel functions to approximate \(Sim()\) operator which reduce the complexity to linear.
-Given an input sequence of $N$ tokens, standard self-attention computes
+Linear Attention \cite{shen2021efficient} mitigates the quadratic complexity of softmax attention by using kernel functions to approximate the softmax operator, thereby achieving linear complexity. However, linear attention typically underperforms compared to standard softmax attention due to the inherent limitations and information loss associated with this approximation.
+% Given an input sequence of $N$ tokens, standard self-attention computes
 
-\begin{equation}
-  A = \text{softmax} \left( \frac{QK^T}{\sqrt{d}} \right) V
-  \label{eq:softmax}
-\end{equation}
-where $Q,K,V \in \mathbb{R}^{N \times d}$ are the query, key, and value matrices and $d$ is the feature dimension.
+% \begin{equation}
+%   A = \text{softmax} \left( \frac{QK^T}{\sqrt{d}} \right) V
+%   \label{eq:softmax}
+% \end{equation}
+% where $Q,K,V \in \mathbb{R}^{N \times d}$ are the query, key, and value matrices and $d$ is the feature dimension.
 
-Linear attention replaces softmax operation with a kernel feature mapping \(\phi(\cdot)\) applied element-wise
-\begin{equation}
-  A = \phi(Q)\phi(K)^T V
-  \label{eq:linear}
-\end{equation}
+% Linear attention replaces softmax operation with a kernel feature mapping \(\phi(\cdot)\) applied element-wise
+% \begin{equation}
+%   A = \phi(Q)\phi(K)^T V
+%   \label{eq:linear}
+% \end{equation}
 
-Due to matrix rank constraints,
-\begin{equation}
-  \text{rank}(A) \le d.
-  \label{eq:linear_rank}
-\end{equation}
-when the number of tokens $N$ is significantly larger than $d$, the attention mechanism must compress the interactions among many tokens into a limited representation. This compression can reduce the model's ability to capture fine-grained relationships among tokens, especially in high-resolution vision tasks. Thus its performance is still behind softmax.
+% Due to matrix rank constraints,
+% \begin{equation}
+%   \text{rank}(A) \le d.
+%   \label{eq:linear_rank}
+% \end{equation}
+% when the number of tokens $N$ is significantly larger than $d$, the attention mechanism must compress the interactions among many tokens into a limited representation. This compression can reduce the model's ability to capture fine-grained relationships among tokens, especially in high-resolution vision tasks. Thus its performance is still behind softmax.
 FLattenTransformer \cite{han2023flatten} introduces a focused function to enhance the ability of linear attention to concentrate on relevant information, while MLLA \cite{han2024demystify} establishes a link between linear attention and the Mamba model \cite{gu2024mamba}.
-Many other approaches either rely on kernel-based approximations of the softmax function or integrate depthwise convolution to improve feature diversity.
-Recently, Qihang Fan \etal. \cite{fan2025breaking} addresses a fundamental limitation of linear attention by identifying the low-rank nature of its feature representations as a major cause of performance degradation. To overcome this, the paper proposes Rank-Augmented Linear Attention (RALA), which enriches both the key-value buffer and output features to raise their effective rank.
-\subsection{Token Pruning}
+Many other approaches either rely on kernel-based approximations of the softmax function or integrate depthwise convolutions to improve feature diversity. Recently, Fan \etal \cite{fan2025breaking} addressed a fundamental limitation of linear attention by identifying the low-rank nature of its feature representations as a major cause of performance degradation. To overcome this, they proposed Rank-Augmented Linear Attention (RALA), which utilizes a softmax-based ranking to restructure token weights inside the memory buffer, thereby enhancing information richness and increasing the matrix rank. However, applying a global softmax over the entire image can cause the overall saliency to become saturated. Motivated by this, we adopt the overall framework from RALA but replace the global softmax ranking with our proposed MARL gating mechanism.
+\subsection{Token Gating}
 
-ViT suffers from high computational cost propotional to the number of input tokens, hence many attempts have been made to reduce the redundant tokens while keeping the high performance. Traditional dynamic methods like DynamicViT \cite{rao2021dynamicvit} and TokenLearner \cite{ryoo2021tokenlearner} adaptively drop or condense tokens. Adaptive pruning technique such as AdaViT \cite{meng2022adavit} use attention metrics or learned masks to select important tokens. Recent methods introduce the use of RL to learn the pruning policies. Specifically, Chenglong Lu \etal. \cite{lu2025reinforcement} formulates token pruning as a sequential decision making problem with multi-agent RL, where each of the visual token is consider an agent.
+Vision Transformers (ViTs) suffer from high computational costs proportional to the number of input tokens. Hence, many attempts have been made to reduce redundant tokens while maintaining high performance. Traditional dynamic methods like DynamicViT \cite{rao2021dynamicvit} and TokenLearner \cite{ryoo2021tokenlearner} adaptively drop or condense tokens. Adaptive pruning techniques such as AdaViT \cite{meng2022adavit} use attention metrics or learned masks to select important tokens. Recent methods introduce the use of Reinforcement Learning (RL) to learn pruning policies. Specifically, Lu \etal \cite{lu2025reinforcement} formulate token pruning as a sequential decision-making problem using MARL, where each visual token is considered an agent. Our method builds upon this MARL framework but produces continuous survival weights rather than relying on discrete keep-or-prune actions.

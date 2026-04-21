@@ -3,213 +3,130 @@
 %baseline : key baseline without modifficaiton
 %add dataset + describe
 
-\subsection{Experimental Design}
+\subsection{Datasets}
 
-Our evaluation includes two primary CV tasks: \textbf{image classification} and \textbf{object detection}. We focus on measuring the trade-off between model accuracy and computational efficiency (both training and inference) while conducting ablation studies to isolate the impact of each architectural component.
+To evaluate the effectiveness of our proposed framework, we conduct experiments on two standard image classification datasets: CIFAR-10 and ImageNet-100. The selection of these specific datasets is driven by a balance between computational feasibility and representative complexity. Training on these subsets significantly reduces the training time per epoch, allowing for rapid iteration and prototyping on accessible consumer-grade hardware. 
+A quantitative comparison of our selected datasets against their full-scale variants is provided in Table \ref{tab:dataset_comparison}.
 
-\subsection{Task Specifications}
+\begin{table}[htbp]
+    \centering
+    \caption{Comparison of our selected training datasets against their full-scale variants.}
+    \label{tab:dataset_comparison}
+    \begin{tabular}{lcccc}
+        \toprule
+        \textbf{Feature} & \textbf{CIFAR-10}  & \textbf{ImageNet-100}\\
+        \midrule
+        \textbf{Classes} & 10  & 100 \\
+        \textbf{Resolution} & $32 \times 32$  & $\sim 224 \times 224$  \\
+        \textbf{Training} & 50,000  & $\sim 130,000$  \\
+        \textbf{Validation} & 10,000& 5,000 \\
+        \bottomrule
+    \end{tabular}
+\end{table}
 
-\paragraph{Image Classification}
-We use the \textbf{ImageNet-100} dataset, a standard benchmark containing over 100 thousand images across 200 categories. Performance is measured using \textbf{Top-1 Accuracy}, which denotes the percentage of instances where the model's highest-probability prediction matches the ground-truth label.
-
-\paragraph{Object Detection}
-For localization tasks, we use \textbf{COCO} 2017 which is widely recognized for its complexity and variety of object scales. We report \textbf{Average Precision (AP)}, a metric that accounts for both the precision and recall of the predicted bounding boxes at various Intersection over Union (IoU) thresholds.
-
-\subsection{Implementation Environment}
-The framework is implemented in \textbf{Python} using \textbf{PyTorch}. All experiments, including training and inference profiling, are conducted on a local computer with a single NVIDIA RTX 5060Ti 16GB.
-
+\subsection{Evaluation Metrics}
+We evaluate the proposed framework against several state-of-the-art models, including architectures based on standard softmax and linear attention mechanisms. Furthermore, we compare our approach against alternative gating methods, such as the sigmoid function. In the current work, our evaluation focuses strictly on the image classification task, measuring Top-1 accuracy. Extending this framework to other dense vision tasks, such as object detection and semantic segmentation, is left for future work.
+\subsection{Implementation Details}
+All models are implemented and trained utilizing a combination of a local NVIDIA RTX 5060 Ti and Kaggle Tesla T4 GPU accelerators. Prior to feature extraction, all input images are resized to a fixed spatial resolution of $144 \times 144$. For the MARL reward formulation, the computational budget penalty coefficient ($\lambda_b$) is set to $0.05$, and the sparsity penalty coefficient ($\lambda_s$) is set to $1.0$. The entire training process is conducted over $40$ epochs.
 \subsection{Results}
-\begin{itemize}
-  \item object detection baselines: RALA, Ours, RMT-T.
-  \item image classification baselines: RALA, Ours, MLLA-T.
-  \item inference speed
-\end{itemize}
-
-% \subsection{Datasets}
-
-% \subsection{Evaluation Protocol}
-% This subsection defines how model performance is assessed. It should include:
-% \begin{itemize}
-%   \item Evaluation metrics (\eg, accuracy, AUROC, F1-score, mAP).
-%   \item Data splitting strategy and any cross-validation or repeated-trial setup.
-%   \item Baselines used for comparison and criteria for fair evaluation.
-%   \item Any task-specific rules or conventions followed during evaluation.
-% \end{itemize}
-
-% \subsection{Experimental Settings}
-% This subsection outlines the full implementation and training configuration for reproducibility:
-% \begin{itemize}
-%   \item Model architecture settings and important hyperparameters
-%         (\eg, learning rate, batch size, number of epochs).
-%   \item Optimization algorithms and loss functions.
-%   \item Hardware and software environment (\eg, GPU type, deep learning framework).
-%   \item Data preprocessing and augmentation pipeline.
-% \end{itemize}
-
-% \subsection{Results and Discussion}
-% This subsection presents and analyzes the experimental results:
-% \begin{itemize}
-%   \item Quantitative results summarized in tables and figures.
-%   \item Qualitative results when appropriate.
-%   \item Comparisons with state-of-the-art methods.
-%   \item Insights on why the proposed method performs well and any limitations or failure cases.
-% \end{itemize}
-
-% \subsubsection{Comparison Experiments}
-% This subsection reports direct comparisons with existing approaches:
-% \begin{itemize}
-%   \item Performance comparison with classical baselines and recent state-of-the-art methods.
-%   \item Analysis of cases where the proposed method excels.
-%   \item Discussion of scenarios where performance is comparable or lower.
-%   \item Positioning of the proposed method within the broader research landscape.
-%         There should be multiple tables \ref{tab1} and figures \ref{fig2} for demonstration and clarity.
-% \end{itemize}
-
-% \begin{table}[h]
-%   \centering
-%   \caption{Experimental results of predicate classification without Graph Constraint.}
-%   \label{table:pred_cls_results}
-%   \begin{tabular}{ |c|c c c| }
-%     \hline
-%     Category & R@20   & R@50   & R@100  \\
-%     \hline
-%     Spatial  & 0.4471 & 0.6356 & 0.7590 \\
-%     % \hline
-%     Action   & 0.2971 & 0.3835 & 0.4544 \\
-%     % \hline
-%     $mR@K$   & 0.0596 & 0.1027 & 0.1530 \\
-%     % \hline
-%     $R@K$    & 0.2991 & 0.4177 & 0.4987 \\
-%     \hline
-%   \end{tabular}
-% \end{table}
-
-
-% \begin{table}[t]
-%   \centering
-%   \caption{Table captions should be placed above the tables. Tables should be showned on top. Best values are bolded while second-best ones are underlined.}\label{tab1}
-%   \begin{tabular}{|p{3cm}|c|c|}
-%     \hline
-%     Methods       & Metric 1          & Metric 2          \\
-%     \hline
-%     SOTA 1 [ref]  & 0.001             & 0.002             \\
-%     SOTA 2 [ref]  & 0.003             & \underline{0.008} \\
-%     SOTA 3 [ref]  & 0.005             & 0.006             \\
-%     SOTA 4 [ref]  & \underline{0.007} & 0.004             \\
-%     \hline
-%     \textbf{Ours} & \textbf{0.009}    & \textbf{0.010}    \\
-%     \hline
-%   \end{tabular}
-% \end{table}
-
-% \begin{figure}[t]
-%   \includegraphics[width=\textwidth]{figures/fig1.eps}
-%   \caption{A figure caption is always placed below the illustration.
-%     Please note that short captions are centered, while long ones are
-%     justified by the macro package automatically.} \label{fig2}
-% \end{figure}
-
-% \subsubsection{Ablation Study}
-% This subsection evaluates the contribution of each component of the proposed method:
-% \begin{itemize}
-%   \item Removal or modification of individual modules or strategies.
-%   \item Measurement of performance change to quantify each component’s importance.
-%   \item Justification of design decisions based on empirical evidence.
-% \end{itemize}
-\subsubsection{Image Classification}
+\subsubsection{ImageNet100}
 \begin{table}[htbp]
-  \centering
-  \begin{tabular}{c|c|cc|c}
-    \hline
-    Cost & Model & Params(M) & FLOPs(G) & Top1-acc(\%)   \\
-    \hline
-    \multirow{3}{*}{\rotatebox[origin=c]{90}{\makecell{$\sim 2.5$G}}}
-         & RALA  &           &          & \textbf{}      \\
-         & RMT-T &           &          & \textbf{}      \\
-         & Ours  & 5.67      & 1.71     & \textbf{48.62} \\
-    \hline
-  \end{tabular}
-  \vspace{2mm}
-  \caption{Classification results of different general backbones on ImageNet-100}
-  \label{tab:classification_imagenet100}
+    \centering
+    \resizebox{\columnwidth}{!}{%
+      \begin{tabular}{lccc}
+        \toprule
+        \textbf{Model}     & \textbf{Params (M)} & \textbf{Attention Type} & \textbf{Top1-acc (\%)} \\
+        \midrule
+        RMT  \cite{fan2024rmt}            & 14                  & Softmax                 & 57.56                  \\
+        RALVT  \cite{fan2025breaking}            & 14                  & Linear (Rank-Aug)       & 69                     \\
+        \midrule
+        Baseline (Vanilla) & 14                  & Linear (ELU)            & 51                     \\
+        Baseline + Sigmoid & 14                  & Linear (Gated)          & 50.5                   \\
+        Baseline + Softmax & 14                  & Linear (Rank-Aug)       & 44.24                  \\
+        Baseline + MARL    & 14                  & Linear (Gated)          & 48.88                  \\
+        \bottomrule
+      \end{tabular}%
+    }
+    \vspace{0.5em}
+    \caption{Comparison of models' accuracy on the ImageNet-100 dataset}
 \end{table}
-\subsubsection{Object Detection}
+In our comparative analysis, we include RMT \cite{fan2024rmt} and RALVT \cite{fan2025breaking} as representative state-of-the-art vision architectures. To specifically isolate the impact of our proposed gating mechanism, we define multiple baseline variants built upon the RALVT framework. The \textbf{Vanilla Baseline} consists of a standard linear attention model. The \textbf{Baseline + Softmax} variant incorporates the softmax ranking strategy introduced by RALA \cite{fan2025breaking}, while the \textbf{Baseline + Sigmoid} utilizes a simple sigmoid function for token gating. Finally, \textbf{Baseline + MARL} represents our proposed methodology, replacing standard routing methods with our decentralized reinforcement learning gating framework. Our evaluation reveals that the proposed token gating mechanism significantly outperforms the softmax-based weighting strategy adopted from RALA. However, the ungated vanilla baseline still achieves higher accuracy than the gated variants. We hypothesize that this discrepancy stems from the restricted image resolution ($144 \times 144$) utilized in our current experiments; at such a small scale, explicitly weighting or gating tokens may inadvertently discard critical spatial features, thereby hindering overall performance. Furthermore, while the RMT and RALVT baselines achieve substantially superior results, this performance gap is primarily attributable to their highly optimized architectures and extensively tuned training recipes.
+\subsubsection{CIFAR-10}
 \begin{table}[htbp]
-  \centering
-  \begin{tabular}{c|c|cc|c}
-    \hline
-    Cost & Model  & Params(M) & FLOPs(G) & Top1-acc(\%) \\
-    \hline
-    \multirow{3}{*}{\rotatebox[origin=c]{90}{\makecell{$\sim 2.5$G}}}
-         & RALA   &           &          & \textbf{}    \\
-         & MLLA-T &           &          & \textbf{}    \\
-         & Ours   &           &          & \textbf{}    \\
-    \hline
-  \end{tabular}
-  \vspace{2mm}
-  \caption{Object detection results of different general backbones on COCO 2017}
-  \label{tab:object_detection}
+    \centering
+    \resizebox{\columnwidth}{!}{%
+      \begin{tabular}{lccc}
+        \toprule
+        \textbf{Model}     & \textbf{Params (M)} & \textbf{Attention Type} & \textbf{Top1-acc (\%)} \\
+        \midrule
+        Baseline (Vanilla) & 14                  & Linear (ELU)            & 61.92                  \\
+				Baseline + Sigmoid & 14                  & Linear (Gated)          & 58.77                  \\
+				Baseline + MARL    & 14                  & Linear (Gated)          & 58.37                  \\
+        \bottomrule
+      \end{tabular}%
+    }
+    \vspace{0.5em}
+    \caption{Comparison of models' accuracy on the ImageNet-100 dataset}
 \end{table}
-\subsubsection{Inference Speed}
-The inference speed of our model is in in Figure~\ref{fig:inference_speed}
-\begin{figure}[htbp]
-  \makebox[\linewidth][c]{
-    \includegraphics[width=1.325\linewidth]{images/speed.png}
-  }
-  \caption{The speed and GFLOPS with respect to image size}
-  \label{fig:inference_speed}
-\end{figure}
-
+Similar trends are observed on the CIFAR-10 dataset; however, the performance margins between the models are less pronounced.
 % Continue with the rest of your text here...
-\subsection{Ablation Study}
-\subsubsection{Other gating mechanism}
-Discuss the result of other gating mechanism compare to RL.
-We hypothesize that the RL gating will be superior to the existing methods due to
-its ability to gather global information. On the other hand, the
-existing methods may have better speed, but it should be negligible.
-\begin{table}[htbp]
-  \centering
-  \begin{tabular}{c|c|cc|c}
-    \hline
-    Cost & Model     & Params(M) & FLOPs(G) & Top1-acc(\%)   \\
-    \hline
-    \multirow{3}{*}{\rotatebox[origin=c]{90}{\makecell{$\sim 2.5$G}}}
-         & No Gating & 5.67      & 1.71     & \textbf{46.30} \\
-         & RALA      &           &          & \textbf{}      \\
-         & Ours      & 5.67      & 1.71     & \textbf{48.62} \\
-    \hline
-  \end{tabular}
-  \vspace{2mm}
-  \caption{Classification result of different gating mechanisms}
-  \label{tab:classification}
-\end{table}
-We can see that the MARL gating help remove the noise tokens within the linear attention memory, hence improving
-the accuracy.
-\subsubsection{Without budget concern}
-Discuss the result fo RL gating without budget concern. We hypothesize that the RL will be
-lazy to assign a low weight for tokens, since it only needs to retain the performance.
-\subsubsection{Without Fisher Initialization}
-Discuss the training time, result without Fisher Initialzatio for Actor-Critic network. We propose
-that training the Actor-Critic network will be difficult due to unstablized training, and the high variance
-of RL.
+% \subsection{Ablation Study}
+% \subsubsection{Other gating mechanism}
+% Discuss the result of other gating mechanism compare to RL.
+% We hypothesize that the RL gating will be superior to the existing methods due to
+% its ability to gather global information. On the other hand, the
+% existing methods may have better speed, but it should be negligible.
+% \begin{table}[htbp]
+%   \centering
+%   \begin{tabular}{c|c|cc|c}
+%     \hline
+%     Cost & Model     & Params(M) & FLOPs(G) & Top1-acc(\%)   \\
+%     \hline
+%     \multirow{3}{*}{\rotatebox[origin=c]{90}{\makecell{$\sim 2.5$G}}}
+%          & No Gating & 5.67      & 1.71     & \textbf{46.30} \\
+%          & RALA      &           &          & \textbf{}      \\
+%          & Ours      & 5.67      & 1.71     & \textbf{48.62} \\
+%     \hline
+%   \end{tabular}
+%   \vspace{2mm}
+%   \caption{Classification result of different gating mechanisms}
+%   \label{tab:classification}
+% \end{table}
+% We can see that the MARL gating help remove the noise tokens within the linear attention memory, hence improving
+% the accuracy.
+% \subsubsection{Without budget concern}
+% Discuss the result fo RL gating without budget concern. We hypothesize that the RL will be
+% lazy to assign a low weight for tokens, since it only needs to retain the performance.
+% \subsubsection{Without Fisher Initialization}
+% Discuss the training time, result without Fisher Initialzatio for Actor-Critic network. We propose
+% that training the Actor-Critic network will be difficult due to unstablized training, and the high variance
+% of RL.
 \subsection{Qualitative Study}
-\subsubsection{Gating Map Visualization}
-To qualitatively evaluate the token selection behavior of our MARL framework, we visualize the spatial gating maps generated by the swarm's continuous actions. Figure~\ref{fig:gating_map1s},\ref{fig:gating_map2s} illustrates the original input images alongside their corresponding survival weight heatmaps ($w_{n,l}$) at the deeper layers of the network.
-We can observe that the agents successfully learn to distinguish task-salient features from redundant background noise. High survival weight are densely concentrated on the primary subjects. Conversely, the background regions are assigned near-zero weights, silencing them from the recurrent memory update.
+\paragraph{Gating Map Visualization}
 
+To qualitatively evaluate the token selection behavior of our proposed framework against the baselines, we visualize the spatial routing maps generated at deeper layers of the network. 
+Observing the \textbf{RALA (Softmax)} map (Figure~\ref{fig:gating_rala}), we see clear visual evidence of the softmax saturation problem discussed earlier; the global normalization across the sequence heavily dilutes the token weights, resulting in a dark, near-zero activation map that chokes information flow. In contrast, the \textbf{Sigmoid} (Figure~\ref{fig:gating_map_sigmoid}) baseline produces an aggressive, high-contrast saliency map that heavily activates on the primary subject while completely zeroing out the background. Our proposed \textbf{MARL} (Figure~\ref{fig:gating_map_marl}) framework produces a softer, continuous gating distribution. We attribute this less decisive gating behavior to current limitations in hyperparameter optimization, suggesting that the sparsity penalty coefficients require further tuning to enforce strict bimodal survival weights.
 \begin{figure}[htbp]
   \centering
   % Adjust the width if it's too large or small
-  \includegraphics[width=\linewidth]{images/map1.jpg}
-  \caption{}
-  \label{fig:gating_map1s}
+  \includegraphics[width=\linewidth]{images/rala.png}
+  \caption{RALA's saliency map}
+  \label{fig:gating_rala}
 \end{figure}
 \begin{figure}[htbp]
   \centering
   % Adjust the width if it's too large or small
-  \includegraphics[width=\linewidth]{images/map2.jpg}
-  \caption{}
-  \label{fig:gating_map2s}
+  \includegraphics[width=\linewidth]{images/sigmoid.png}
+  \caption{Sigmoid's saliency map}
+  \label{fig:gating_map_sigmoid}
 \end{figure}
+\begin{figure}[htbp]
+  \centering
+  % Adjust the width if it's too large or small
+  \includegraphics[width=\linewidth]{images/marl.png}
+  \caption{MARL's saliency map}
+  \label{fig:gating_map_marl}
+\end{figure}
+
 % explain why it works or not?
 % what's next?

@@ -1,8 +1,29 @@
 \section{Method}
-We adopt the method from RALA \cite{fan2025breaking} for solving the low-rank problem, and replace the gating component with a multi-agent RL gating framework where every token is treated as an agent sharing a continuous, stochastic Actor-Critic module. We aim to add a budget constraint, and layer wise information into the gating to improve the linear attention speed and performance. The gating score can be used to prune the token when inference.
+\subsection{Preliminary}
 
+\textbf{Softmax Attention.} Softmax attention serves as the core mechanism in standard Transformers. Let $Q, K, V$ denote the query, key, and value matrices for a sequence of $N$ tokens. The parallel training formulation, incorporating a causal mask $M$ where $M_{i,j} = -\infty$ if $j > i$ and $1$ otherwise, is defined as $O = \text{softmax}(QK^\top \odot M)V$. During iterative inference, the output for the $t$-th step is computed as:
+\begin{equation}
+    o_t = \sum_{j=1}^t \frac{\exp(q_t^\top k_j)}{\sum_{l=1}^t \exp(q_t^\top k_l)} v_j
+\end{equation}
+While powerful, softmax attention suffers from a quadratic time complexity $\mathcal{O}(N^2)$ with respect to the sequence length, alongside a linear memory growth $\mathcal{O}(N)$ during inference due to the KV-cache. In vision tasks, where the number of image tokens scales quadratically with resolution, these computational bottlenecks become prohibitive for high-resolution ViTs.
+
+\textbf{Linear Attention and Matrix-Valued Hidden States.} Linear attention addresses this quadratic bottleneck by approximating the softmax similarity matrix. It replaces the softmax operation with an element-wise nonlinear feature mapping $\phi(\cdot)$ (e.g., ReLU or ELU) to ensure non-negative similarities, yielding the parallel formulation $O = \phi(Q)\phi(K)^\top V$. By leveraging the associative property of matrix multiplication, the iterative inference can be rewritten to reveal a matrix-valued hidden state. The unnormalized attention for step $t$ is computed as:
+\begin{equation}
+    o_t = \sum_{j=1}^t \big(\phi(q_t)^\top \phi(k_j)\big)v_j = \underbrace{\left( \sum_{j=1}^t v_j \phi(k_j)^\top \right)}_{S_t \in \mathbb{R}^{d \times d}} \phi(q_t)
+\end{equation}
+By defining $S_t = \sum_{j=1}^t v_j \phi(k_j)^\top$, linear attention essentially implements an element-wise linear recurrence where $S_t = S_{t-1} + v_t\phi(k_t)^\top$ and $o_t = S_t\phi(q_t)$. This formulation achieves linear time complexity $\mathcal{O}(N)$ and requires only constant $\mathcal{O}(1)$ memory per decoding step, effectively eliminating the growing KV-cache.
+
+\textbf{The Low-Rank Limitation.} Despite its computational advantages, linear attention typically underperforms compared to standard softmax attention. Because the output $O$ is computed via an intermediate matrix interaction, its rank is strictly bounded by the feature dimension $d$, such that $\text{rank}(O) \le d$. When the number of visual tokens $N$ is significantly larger than $d$, the attention mechanism is forced to compress the interactions of many tokens into a heavily restricted representational space. This forced compression reduces the model's ability to capture fine-grained, diverse spatial relationships, hindering its performance on complex vision tasks.
+
+\textbf{Chunkwise Formulation.} To enable sequential importance assignment while maintaining global context, we reformulate linear attention into a causal, chunkwise process. The input sequence of $N$ tokens is partitioned into $T$ non-overlapping chunks of size $C$. At each step $t \in \{1, \dots, T\}$, the backbone processes the current chunk into local queries $Q_t$, keys $K_t$, and values $V_t$. Rather than computing a full sequence matrix, we maintain two recurrent memory representations. The numerator state $S_t \in \mathbb{R}^{d \times d}$ accumulates the cross-covariance of keys and values, while the denominator state $Z_t \in \mathbb{R}^{d \times 1}$ tracks the normalization factor:
+\begin{align}
+    S_t &= S_{t-1} + \phi(K_t)^\top V_t \\
+    Z_t &= Z_{t-1} + \sum_{i \in \text{chunk } t} \phi(k_{i, t})^\top
+\end{align}
+The attention output for the current chunk $t$ is then computed utilizing these recurrent global states as $O_t = \frac{\phi(Q_t) S_t}{\phi(Q_t) Z_t}$.
 \subsection{Architecture Overview}
-An input image is tokenized into $N$ patch embeddings and partitioned into $T$ sequential chunks of size $C$. A linear-attention ViT backbone processes each chunk, projects it into local queries $Q_t$, keys $K_t$, and values $V_t$ and maintain a recurrent memory $(S_t, Z_t)$ in place of a full attention matrix.
+We adopt the method from RALA \cite{fan2025breaking} for solving the low-rank problem, and replace the gating component with a multi-agent RL gating framework where every token is treated as an agent sharing a continuous, stochastic Actor-Critic module. We aim to add a budget constraint, and layer- wise information into the gating to improve the linear attention speed and performance. The gating score can be used to prune the token during inference.
+An input image is tokenized into $N$ patch embeddings and partitioned into $T$ sequential chunks of size $C$. A linear-attention ViT backbone processes each chunk, projects it into local queries $Q_t$, keys $K_t$, and values $V_t$ and maintains a recurrent memory $(S_t, Z_t)$ in place of a full attention matrix.
 The shared Actor-Critic module evaluates the local token features in parallel. At each layer $l$, which represents a discrete time step in the Markov Decision Process (MDP), every agent $n \in \{1,\dots,N\}$ produces a scalar gating weight $w_n \in (0,1)$. For a specific chunk $t$, the agents collectively produce a weight vector:
 \begin{equation}
   \mathbf{w}_t = [w_{t,1}, w_{t,2}, \dots, w_{t,C}]^\top \in (0,1)^C
@@ -20,7 +41,7 @@ These weights are then utilized to gate both the parallel memory update and the 
 
 After all $T$ chunks are processed via the sequential recurrence, the final state $(S_T, Z_T)$ is consumed by the task head to produce the terminal reward $R$, which is used to guide the cooperative policy optimization.
 
-Training follows a two-phase curriculum. \textbf{Phase 1} pretrain the ViT on the classification task to obtain a visual backbone. Then the RL agents is supervised trained with the Fisher Information of the pretrained ViT, avoiding the policy collapse that arises when RL is applied cold to a high-dimensional visual state. \textbf{Phase 2} fine-tunes the full system end-to-end on the downstream task via Proximal Policy Optimization (PPO) with Generalized Advantage Estimation. During inference, stochastic sampling is disabled, and the Actor produces deterministic continuous weights with hard pruning per chunk.
+Training follows a two-phase curriculum. \textbf{Phase 1} pretrains the ViT on the classification task to obtain a visual backbone. Then the RL agents are supervisedly trained with the Fisher Information of the pretrained ViT, avoiding the policy collapse that arises when RL is applied cold to a high-dimensional visual state. \textbf{Phase 2} fine-tunes the full system end-to-end on the downstream task via Proximal Policy Optimization (PPO) with Generalized Advantage Estimation. During inference, stochastic sampling is disabled, and the Actor produces deterministic continuous weights with hard pruning per chunk.
 
 \begin{figure*}[ht]
   \centering
@@ -94,37 +115,9 @@ Training follows a two-phase curriculum. \textbf{Phase 1} pretrain the ViT on th
   \caption{Architecture of the MARL-Gated Linear Attention Block. At each layer $l$, the swarm of $N$ agents independently evaluates the local features to produce survival weights $\mathbf{w}_l$. These weights dictate the information flow into the chunkwise recurrent memory $S_t$. Finally, the intermediate linear attention output is refined via a Hadamard-gated transformation to produce the state $x_{l+1}$ for the next layer.}
   \label{fig:architecture}
 \end{figure*}
-
-\subsection{Chunkwise Formulation of Linear Attention}
-Standard linear attention leverages the associative property to reduce complexity to $\mathcal{O}(N)$. The output for the $i$-th query is typically computed using a global normalization term:
-\begin{equation}
-  O_i = \frac{\phi(Q_i) \sum_{j=1}^N \phi(K_j)^\top V_j}{\phi(Q_i) \sum_{j=1}^N \phi(K_j)^\top}
-\end{equation}
-
-To enable sequential importance assignment, we reformulate this into a causal, chunkwise process. The input sequence of $N$ tokens is partitioned into $T$ non-overlapping sequential chunks of size $C$. At each step $t \in \{1, \dots, T\}$, the backbone processes the current chunk into local Queries ($Q_t$), Keys ($K_t$), and Values ($V_t$).
-
-Rather than computing a full sequence matrix, we maintain two recurrent memory representations to capture global context. The numerator state $S_t \in \mathbb{R}^{d \times d}$ accumulates the cross-covariance of keys and values, while the denominator state $Z_t \in \mathbb{R}^{d \times 1}$ tracks the normalization factor:
-\begin{equation}
-  S_t = S_{t-1} + \phi(K_t)^\top V_t
-\end{equation}
-\begin{equation}
-  Z_t = Z_{t-1} + \sum_{i \in \text{chunk } t} \phi(K_{i, t})^\top
-\end{equation}
-
-Following RALA \cite{fan2025breaking}, we use Hadamard transformation to fix the low-rank problem of linear attention:
-\begin{equation}
-  \phi(X) = \sigma(HX)
-\end{equation}
-where $H$ denotes a Hadamard matrix and $\sigma(\cdot)$ is a positive activation function.
-
-The attention output for the current chunk $t$ is then computed as:
-\begin{equation}
-  O_t = \frac{\phi(Q_t) S_t}{\phi(Q_t) Z_t}
-\end{equation}
-
 \subsection{Markov Decision Process Formulation}
 
-By reformulating linear attention into a blockwise execution, we isolate the importance evaluation into a continuous MDP. To avoid the autoregressive bottleneck comed with sequential RL evaluation, we isolate the gating policy from the recurrent state update, enabling parallel associative scans across the sequence.
+By reformulating linear attention into a blockwise execution, we isolate the importance evaluation into a continuous MDP. To avoid the autoregressive bottleneck associated with sequential RL evaluation, we isolate the gating policy from the recurrent state update, enabling parallel associative scans across the sequence.
 
 \subsubsection{State Space}
 To enable parallel execution across all $T$ chunks, the agent's observation is localized. For each layer $l$ (representing the temporal step), the state $s_{n,l}$ for agent $n \in \{1,\dots,N\}$ is derived directly from the local visual features:
@@ -139,18 +132,15 @@ The swarm of $N$ agents utilizes a shared Actor-Critic policy $\pi_\theta$ to ev
   \mathbf{w}_t = [w_{t,1}, w_{t,2}, \dots, w_{t,C}]^\top
 \end{equation}
 \subsubsection{Reward Function}
-The swarm is governed by a global cooperative reward function calculated at the terminal layer $L$. To enforce the computational budget $B_{\text{target}}$ without hard pruning, we define the total expenditure as the empirical mean of the weights:
+To encourage efficient gating, the swarm is governed by a global cooperative reward function calculated at the terminal layer $L$ and broadcasted to the entire swarm. The terminal reward $R$ is defined as:
 \begin{equation}
-  B_{\text{used}} = \frac{1}{L \cdot N} \sum_{l=1}^L \sum_{n=1}^N w_{n,l}
+    R = \underbrace{-\mathcal{L}_{CE}}_{\text{Task}} - \underbrace{\lambda_b \bar{w}}_{\text{Budget}} - \underbrace{\lambda_s \big[ \bar{w}(1-\bar{w}) \big]}_{\text{Sparsity}}
 \end{equation}
-The terminal reward $R$:
-\begin{equation}
-  R = R_{task} - \lambda \cdot \max(0, B_{\text{used}} - B_{\text{target}}),
-\end{equation}
-where $\lambda$ is a penalty coefficient. This penalizes the swarm at the end of the forward pass if their collective survival weights exceed the target capacity, forcing agents to aggressively dropping the weight while maintaning the model performance
+where $\mathcal{L}_{CE}$ is the standard Cross-Entropy loss for the classification task, $\bar{w}$ is the mean activation across the network, $\lambda_b$ is a penalty coefficient enforcing the computational budget, and $\lambda_s$ is a sparsity penalty coefficient. This specific penalty structure actively pushes the agents toward bimodal decisiveness (tending strictly toward $0$ or $1$) while maintaining overall model performance.
+
 
 \subsubsection{Squashed Gaussian Actor-Critic Network}
-To enable continuous down-weighting of uninformative features, we model the swarm's policy $\pi_\theta(a_{n,l} \mid s_{n,l})$ as a \textbf{Squashed Gaussian} distribution. This approach avoids the non differentiable  of discrete gatings and the competitive constraints of global Softmax operations, allowing each agent to determine its survival weight independently.
+To enable continuous down-weighting of uninformative features, we model the swarm's policy $\pi_\theta(a_{n,l} \mid s_{n,l})$ as a \textbf{Squashed Gaussian} distribution. This approach avoids the non-differentiable  of discrete gatings and the competitive constraints of global Softmax operations, allowing each agent to determine its survival weight independently.
 
 The shared Actor network computes the parameters of an unbounded Normal distribution for every agent $n \in \{1, \dots, N\}$ at layer $l$. To ensure numerical stability, the standard deviation is passed through a softplus activation with a small $\epsilon$ floor:
 \begin{equation}
@@ -182,13 +172,7 @@ After warming up the backbone on a dense classification task, we compute the squ
 where $s_{n,l}$ is the local feature observation of agent $n$ at layer $l$, and $\tilde{\mathcal{I}}_j$ is the ground-truth Fisher saliency for token $j$. By forcing every agent's local Value head to predict the global saliency sum, the swarm develops a shared understanding of the total information available in the image.
 
 \subsection{Finetuning: Cooperative Policy Optimization}
-In Phase 2, the full system is optimized end-to-end via PPO. Aggressive down-weighting of tokens by the swarm can cause the recurrent memory $S_t$ to stagnate. To mitigate this, we augment the memory update with a \textbf{state dilution term} $\Gamma_\tau$, which represents a fraction of the historical average scaled by the degree of suppression $(1 - \bar{w}_\tau)$:
-\begin{equation}
-  \Gamma_\tau = \gamma \cdot (1 - \bar{w}_\tau) \cdot \frac{S_{\tau-1}}{\tau-1}
-\end{equation}
-When the swarm collectively suppresses a chunk ($\bar{w}_\tau \to 0$), $\Gamma_\tau$ tops up the memory with the mean historical contribution, preventing gradient vanishing.
-
-Using Generalized Advantage Estimation ($\hat{A}$) derived from the Critic, the swarm is updated via the clipped PPO objective. To prevent premature policy convergence, we inject a Jacobian-corrected entropy bonus for the squashed Gaussian distribution:
+In Phase 2, the full system is optimized end-to-end via PPO. Using Generalized Advantage Estimation ($\hat{A}$) derived from the Critic, the swarm is updated via the clipped PPO objective. To prevent premature policy convergence, we inject a Jacobian-corrected entropy bonus for the squashed Gaussian distribution:
 \begin{equation}
   \mathcal{L}_{\mathrm{PPO}} = -\mathbb{E}\left[\min\left(r(\theta)\hat{A},\; \mathrm{clip}(r(\theta),1\pm\epsilon)\hat{A}\right)\right] - \lambda_{\mathrm{ent}} H(\pi_\theta),
 \end{equation}

@@ -7,22 +7,17 @@
 % \end{itemize}
 
 % introduction
-In recent years, \textbf{Transformer} \cite{vaswani2017attention} has become a powerful foundational architecture for many models.
-\textbf{Vision Transformers} \cite{dosovitskiy2020image}, one of the leading architectures in Computer Vision (CV), have made significant breakthroughs
-in object detection, image classification, and semantic segmentation.
-%% problem
-However, softmax attention - the core mechanism of Transformer, has a high computational complexity of \( \mathcal{O}(n^2) \).
+While softmax attention has become a cornerstone of modern deep learning architectures, its $\mathcal{O}(n^2)$ computational complexity poses a significant bottleneck. This limitation is particularly pronounced in Vision Transformers (ViTs), where the number of visual tokens scales quadratically with the input image resolution.
 % background
-To address the issue, many works attempted to group vision tokens. Although this method reduces the complexity,
-Transformer loses its ability to perceive information globally.
-Other works replace softmax attention with \textbf{linear attention} which help reduce the quadratic complexity.
-However, linear attention inability to model complex information yields unsatisfactory results due to its low-rank nature and magnitude negligence.
+To address the issue, many works attempted to group vision tokens [CITE CSWin Transformer, Semantic equitable clustering, Dynamic group transformer]. Although this method reduces the complexity,
+The Transformer loses its ability to perceive information globally.
+Other works replace softmax attention with \textbf{linear attention} which helps reduce the quadratic complexity \cite{han2023flatten,fan2025breaking,gu2024mamba,cai2023efficientvit}.
+However, linear attentions inability to model complex information yields unsatisfactory results due to its low-rank nature and magnitude negligence.
 % transition
 Many works have attempted to improve linear attention by tackling its low-rank nature \cite{fan2025breaking}.
-Linear attention replaces softmax with kernal feature maps which causes the loss of sharpness.
-Therefore it can not be as selective as softmax attention which can place most of its attention weights on a few relevant tokens.
-To address this, we apply a Reinforcement Learning (RL) \textbf{gating} mechanism for each token, and extend to \textbf{token pruning} \cite{rao2021dynamicvit,lu2025reinforcement} which help refine the input for linear attention.
-With this approach, we aim to speed up the training and inference time of the model without sacrificing its performance.
+Linear attention replaces softmax with kernel feature maps which causes the loss of sharpness.
+Therefore, it can not be as selective as softmax attention which can place most of its attention weights on a few relevant tokens.
+To address this, we apply a MARL gating mechanism to assign an importance score for each token, in which each agent will correspond to a visual token. We hypothesize that this will enable the agents to learn an optimal survival policy, ensuring that only the most salient and task relevant features are propagated into the recurrent memory. When trained from scratch and evaluated on the ImageNet100 dataset, the model achieved an accuracy of \(48.88\%\). Additionally, by transferring the trained backbone to CIFAR-10, we obtained an accuracy of \(58.37\%\). Although the proposed framework requires further refinement and the preliminary quantitative results remain modest, the generated saliency maps demonstrate that the gating mechanism successfully identifies important visual features.
 % details
 
-% assessment
+

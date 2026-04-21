@@ -1,8 +1,4 @@
-\section{Threats To Validity}
-In this study, several threats to validity  must be acknowledged.
-
-The primary assumption of Phase 1 pretraining is that empirical Fisher Information serves as an accurate proxy for ground-truth visual saliency. However, gradients from a cross-entropy loss may not fully capture complex, multi-token spatial dependencies. Furthermore, token pruning can result in a worse accuracy, especially chunkwise linear attention.
-
-The inherent variance of PPO poses an internal threat. RL algorithms are notoriously sensitive to hyperparameter configurations, specifically the sparsity penalty coefficient ($\lambda$) and the entropy bonus.
-
-Current evaluation is constrained to image classification tasks. It remains to be empirically validated how well this localized, independent agent formulation generalizes to dense prediction tasks, such as high-resolution object detection or semantic segmentation where maintaining precise background context is often more critical than in image-level classification.
+\section{Threats to Validity}
+In this study, several threats to validity must be acknowledged. First, the primary assumption of our Phase 1 pretraining is that empirical Fisher Information serves as an accurate proxy for ground-truth visual saliency. However, gradients originating from a global cross-entropy loss may not fully capture complex, multi-token spatial dependencies. 
+Secondly, the inherent optimization variance of PPO poses an internal threat to our findings. Reinforcement learning algorithms are notoriously sensitive to hyperparameter configurations; specifically, the stability of our model relies heavily on the precise tuning of the budget and sparsity penalty coefficient ($\lambda$) and the entropy bonus.
+Finally, regarding external validity, our current evaluation is strictly constrained to image classification tasks. It remains to be empirically validated how well this localized, independent-agent formulation generalizes to dense prediction tasks, such as high-resolution object detection or semantic segmentation, where preserving precise background context is often crucial. Furthermore, our models were evaluated on a single, fixed image resolution ($144 \times 144$). This restricted evaluation scope may introduce structural bias, limiting our understanding of the framework's scalability across diverse visual scales.

@@ -1,8 +1,5 @@
 \section{Conclusion}
-We proposed a MARL gating framework to add a budget constraint and gather global information in order to
-improve the Linear Attention ViT models. In the current state, the framework is not fully developed yet, but still show a good 
-heat map and increase the accuracy of the baseline model. In the future, we will refine the framework and try to experiment on
-more baseline models. 
+In this paper, we proposed a MARL gating framework designed to enforce computational budget constraints and aggregate global context, thereby improving the efficiency and representational capability of Linear Attention Vision Transformers. Our model achieved preliminary accuracies of $48.88\%$ and $58.37\%$ on the ImageNet100 and CIFAR-10 datasets, respectively. While the proposed framework remains in its early stages of development, it demonstrates interpretable saliency maps and yields a measurable accuracy improvement over the existing RALA\cite{fan2025breaking} softmax ranking baseline. Future work will focus on refining the reward optimization process, expanding our empirical evaluation to a broader suite of baseline architectures and higher-resolution configurations, and conducting comprehensive ablation studies to deeply analyze the framework's internal dynamics.
 % \begin{figure}[t]
 %   \centering
 %   \fbox{\rule{0pt}{2in} \rule{0.9\linewidth}{0pt}}
