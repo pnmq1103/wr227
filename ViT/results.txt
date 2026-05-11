@@ -1,0 +1,19 @@
+MARL Accuracy: 48.88%
+Sigmoid Accuracy: 50.50%
+
+=== McNemar's Test Results ===
+b (MARL Correct, Sigmoid Wrong): 510
+c (MARL Wrong, Sigmoid Correct): 591
+Statistic: 5.8129
+p-value: 1.5909e-02
+Conclusion: The difference in performance is statistically significant (p < 0.05).
+
+MARL Accuracy: 58.37%
+Sigmoid Accuracy: 58.77%
+
+=== McNemar's Test Results ===
+b (MARL Correct, Sigmoid Wrong): 1276
+c (MARL Wrong, Sigmoid Correct): 1316
+Statistic: 0.5868
+p-value: 4.4366e-01
+Conclusion: No statistically significant difference in performance (p >= 0.05).
