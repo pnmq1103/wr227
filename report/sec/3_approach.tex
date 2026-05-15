@@ -173,7 +173,7 @@ where $s_{n,l}$ is the local feature observation of agent $n$ at layer $l$, and 
 \subsection{Finetuning: Cooperative Policy Optimization}
 In Phase 2, the full system is optimized end-to-end via PPO. Using Generalized Advantage Estimation ($\hat{A}$) derived from the Critic, the swarm is updated via the clipped PPO objective. To prevent premature policy convergence, we inject a Jacobian-corrected entropy bonus for the squashed Gaussian distribution:
 \begin{equation}
-	\mathcal{L}_{\mathrm{PPO}} = -\mathbb{E}\left[\min\left(r(\theta)\hat{A},\; \mathrm{clip}(r(\theta),1\pm\epsilon)\hat{A}\right)\right] - \lambda_{\mathrm{ent}} H(\pi_\theta),
+	\mathcal{L}_{\mathrm{PPO}} = -\mathbb{E}\left[\min\left(r(\theta)\hat{A},\; \mathrm{clip}(r(\theta),1\pm\epsilon)\hat{A}\right)\right] - \lambda_{\mathrm{ent}} H(\pi_\theta)
 \end{equation}
 where the entropy $H(\pi_\theta)$ accounts for the Tanh-squashing transformation:
 \begin{equation}
