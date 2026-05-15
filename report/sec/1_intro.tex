@@ -10,9 +10,9 @@
 While softmax attention has become a cornerstone of modern deep learning architectures, its $\mathcal{O}(n^2)$ computational complexity poses a significant bottleneck. This limitation is particularly pronounced in Vision Transformers (ViTs), where the number of visual tokens scales quadratically with the input image resolution.
 % background
 To address the issue, many works attempted to group vision tokens \cite{dong2022cswin,fan2025semantic,liu2022dynamic}. Although this method reduces the complexity,
-The Transformer loses its ability to perceive information globally.
+the Transformer loses its ability to perceive information globally.
 Other works replace softmax attention with \textbf{linear attention} which helps reduce the quadratic complexity \cite{han2023flatten,fan2025breaking,gu2024mamba,cai2023efficientvit}.
-However, linear attentions inability to model complex information yields unsatisfactory results due to its low-rank nature and magnitude negligence.
+However, linear attention's inability to model complex information yields unsatisfactory results due to its low-rank nature and magnitude negligence.
 % transition
 Many works have attempted to improve linear attention by tackling its low-rank nature \cite{fan2025breaking}.
 Linear attention replaces softmax with kernel feature maps which causes the loss of sharpness.

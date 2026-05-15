@@ -22,7 +22,7 @@ By defining $S_t = \sum_{j=1}^t v_j \phi(k_j)^\top$, linear attention essentiall
 \end{align}
 The attention output for the current chunk $t$ is then computed utilizing these recurrent global states as $O_t = \frac{\phi(Q_t) S_t}{\phi(Q_t) Z_t}$.
 \subsection{Architecture Overview}
-We adopt the method from RALA \cite{fan2025breaking} for solving the low-rank problem, and replace the gating component with a multi-agent RL gating framework where every token is treated as an agent sharing a continuous, stochastic Actor-Critic module. We aim to add a budget constraint, and layer- wise information into the gating to improve the linear attention speed and performance. The gating score can be used to prune the token during inference.
+We adopt the method from RALA \cite{fan2025breaking} for solving the low-rank problem, and replace the gating component with a multi-agent RL gating framework where every token is treated as an agent that shares a continuous, stochastic Actor-Critic module. We aim to add a budget constraint, and layer-wise information into the gating to improve the linear attention speed and performance. The gating score can be used to prune the token during inference.
 An input image is tokenized into $N$ patch embeddings and partitioned into $T$ sequential chunks of size $C$. A linear-attention ViT backbone processes each chunk, projects it into local queries $Q_t$, keys $K_t$, and values $V_t$ and maintains a recurrent memory $(S_t, Z_t)$ in place of a full attention matrix.
 The shared Actor-Critic module evaluates the local token features in parallel. At each layer $l$, which represents a discrete time step in the Markov Decision Process (MDP), every agent $n \in \{1,\dots,N\}$ produces a scalar gating weight $w_n \in (0,1)$. For a specific chunk $t$, the agents collectively produce a weight vector:
 \begin{equation}
@@ -139,7 +139,7 @@ where $\mathcal{L}_{CE}$ is the standard Cross-Entropy loss for the classificati
 
 
 \subsubsection{Squashed Gaussian Actor-Critic Network}
-To enable continuous down-weighting of uninformative features, we model the swarm's policy $\pi_\theta(a_{n,l} \mid s_{n,l})$ as a \textbf{Squashed Gaussian} distribution. This approach avoids the non-differentiable  of discrete gatings and the competitive constraints of global Softmax operations, allowing each agent to determine its survival weight independently.
+To enable continuous down-weighting of uninformative features, we model the swarm's policy $\pi_\theta(a_{n,l} \mid s_{n,l})$ as a \textbf{Squashed Gaussian} distribution. This approach avoids the non-differentiability of discrete gating and the competitive constraints of global Softmax operations, allowing each agent to determine its survival weight independently.
 
 The shared Actor network computes the parameters of an unbounded Normal distribution for every agent $n \in \{1, \dots, N\}$ at layer $l$. To ensure numerical stability, the standard deviation is passed through a softplus activation with a small $\epsilon$ floor:
 \begin{equation}

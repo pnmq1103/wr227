@@ -27,7 +27,7 @@ A quantitative comparison of our selected datasets against their full-scale vari
 \subsection{Evaluation Metrics}
 We evaluate the proposed framework against several state-of-the-art models, including architectures based on standard softmax and linear attention mechanisms. Furthermore, we compare our approach against alternative gating methods, such as the sigmoid function. In the current work, our evaluation focuses strictly on the image classification task, measuring Top-1 accuracy. Extending this framework to other dense vision tasks, such as object detection and semantic segmentation, is left for future work.
 \subsection{Implementation Details}
-All models are implemented and trained utilizing a combination of a local NVIDIA RTX 5060 Ti and Kaggle Tesla T4 GPU accelerators. Prior to feature extraction, all input images are resized to a fixed spatial resolution of $144 \times 144$. For the MARL reward formulation, the computational budget penalty coefficient ($\lambda_b$) is set to $0.05$, and the sparsity penalty coefficient ($\lambda_s$) is set to $1.0$. The entire training process is conducted over $40$ epochs.
+All models are implemented and trained utilizing a combination of a local NVIDIA RTX 5060 Ti and Kaggle Tesla T4 GPU accelerators. Prior to feature extraction, all input images are resized to a fixed spatial resolution of $144 \times 144$. For the MARL reward formulation, the computational budget penalty coefficient ($\lambda_b$) is set to $0.05$, and the sparsity penalty coefficient ($\lambda_s$) is set to $1.0$. The entire training process is conducted over $40$ epochs without data augmentation, utilizing the Adam optimizer with an initial learning rate of $3 \times 10^{-4}$ and a learning rate scheduler.
 \subsection{Results}
 \subsubsection{ImageNet100}
 \begin{table}[htbp]
@@ -66,7 +66,7 @@ In our comparative analysis, we include RMT \cite{fan2024rmt} and RALVT \cite{fa
       \end{tabular}%
     }
     \vspace{0.5em}
-    \caption{Comparison of models' accuracy on the ImageNet-100 dataset}
+    \caption{Comparison of models' accuracy on the CIFAR-10 dataset}
 \end{table}
 Similar trends are observed on the CIFAR-10 dataset; however, the performance margins between the models are less pronounced.
 % Continue with the rest of your text here...
